@@ -149,35 +149,34 @@ export default function MenuScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        {/* Gradient Header with Profile Section */}
-        <LinearGradient
-          colors={['#6200ee', '#7c4dff']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.profileSection}
-        >
-          <View style={styles.avatarContainer}>
-            <LinearGradient
-              colors={['#fff3e0', '#ffe0b2']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.avatar}
-            >
-              <Text style={styles.avatarText}>
-                {user?.name?.charAt(0).toUpperCase() || 'U'}
-              </Text>
-            </LinearGradient>
+      
+      {/* Fixed Header with Profile Section */}
+      <LinearGradient
+        colors={['#6200ee', '#7c4dff']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.profileSection}
+      >
+        <View style={styles.headerContent}>
+          <LinearGradient
+            colors={['#fff3e0', '#ffe0b2']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.avatar}
+          >
+            <Text style={styles.avatarText}>
+              {user?.name?.charAt(0).toUpperCase() || 'U'}
+            </Text>
+          </LinearGradient>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.userName}>{user?.name || 'User'}</Text>
+            <Text style={styles.userEmail}>{user?.email || ''}</Text>
           </View>
-          <Text style={styles.userName}>{user?.name || 'User'}</Text>
-          <Text style={styles.userEmail}>{user?.email || ''}</Text>
-          <View style={styles.profileBadge}>
-            <Ionicons name="checkmark-circle" size={16} color="#4caf50" />
-            <Text style={styles.profileBadgeText}>Account Active</Text>
-          </View>
-        </LinearGradient>
+        </View>
+      </LinearGradient>
 
-        {/* Menu Items */}
+      {/* Scrollable Menu Items */}
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>Account</Text>
           
@@ -186,25 +185,25 @@ export default function MenuScreen({ navigation }: Props) {
             title="Profile"
             subtitle="View and edit your profile"
             onPress={() => {
-              Alert.alert('Profile', `Name: ${user?.name}\nEmail: ${user?.email}`);
+              navigation.navigate('Profile');
             }}
           />
 
           <MenuItem
-            icon="clipboard"
+            icon="time"
             title="Quiz History"
             subtitle="View your past quiz results"
             onPress={() => {
-              Alert.alert('Quiz History', 'Quiz history feature coming soon!');
+              navigation.navigate('History');
             }}
           />
 
           <MenuItem
-            icon="stats-chart"
+            icon="bar-chart"
             title="Statistics"
             subtitle="Your performance stats"
             onPress={() => {
-              Alert.alert('Statistics', 'Statistics feature coming soon!');
+              navigation.navigate('Statistics');
             }}
           />
         </View>
@@ -217,24 +216,26 @@ export default function MenuScreen({ navigation }: Props) {
             title="Notifications"
             subtitle="Manage notification preferences"
             onPress={() => {
-              Alert.alert('Notifications', 'Notification settings coming soon!');
+              navigation.navigate('Notification');
             }}
           />
 
           <MenuItem
-            icon="moon"
-            title="Theme"
+            icon="palette"
+            title="Theme & Display"
             subtitle="Light / Dark mode"
             onPress={() => {
-              Alert.alert('Theme', 'Theme settings coming soon!');
+              navigation.navigate('Theme');
             }}
           />
 
           <MenuItem
             icon="trash"
-            title="Clear Cache"
+            title="Storage & Cache"
             subtitle="Free up storage space"
-            onPress={handleClearCache}
+            onPress={() => {
+              navigation.navigate('ClearCache');
+            }}
           />
         </View>
 
@@ -245,14 +246,18 @@ export default function MenuScreen({ navigation }: Props) {
             icon="information-circle"
             title="About"
             subtitle="App version and information"
-            onPress={handleAbout}
+            onPress={() => {
+              navigation.navigate('About');
+            }}
           />
 
           <MenuItem
             icon="mail"
             title="Contact Us"
             subtitle="Get in touch with support"
-            onPress={handleContact}
+            onPress={() => {
+              navigation.navigate('ContactUs');
+            }}
           />
 
           <MenuItem
@@ -297,7 +302,7 @@ export default function MenuScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f7fa',
+    backgroundColor: '#f8f9fa',
   },
   scrollView: {
     flex: 1,
@@ -306,89 +311,77 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   profileSection: {
-    paddingTop: 40,
-    paddingBottom: 30,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    marginBottom: 20,
+    paddingTop: 30,
+    paddingBottom: 20,
+    paddingHorizontal: 16,
+    marginBottom: 16,
   },
-  avatarContainer: {
-    marginBottom: 15,
-    shadowColor: '#6200ee',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
   },
   avatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: '#fff',
+    shadowColor: '#6200ee',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
   avatarText: {
-    fontSize: 40,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#ff6f00',
   },
+  headerTextContainer: {
+    marginLeft: 16,
+    flex: 1,
+  },
   userName: {
-    fontSize: 26,
+    fontSize: 18,
     fontWeight: '700',
     color: '#fff',
-    marginBottom: 5,
+    marginBottom: 2,
   },
   userEmail: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: 12,
-  },
-  profileBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginTop: 10,
-  },
-  profileBadgeText: {
-    color: '#fff',
     fontSize: 12,
-    fontWeight: '600',
-    marginLeft: 6,
+    color: 'rgba(255, 255, 255, 0.85)',
   },
   menuSection: {
-    marginBottom: 20,
+    marginBottom: 16,
+    paddingHorizontal: 8,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
     color: '#6200ee',
     textTransform: 'uppercase',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     letterSpacing: 0.8,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    padding: 16,
-    paddingHorizontal: 20,
-    marginHorizontal: 12,
-    marginVertical: 6,
-    borderRadius: 12,
+    padding: 14,
+    paddingHorizontal: 16,
+    marginHorizontal: 8,
+    marginVertical: 4,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#f0f0f0',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
     elevation: 2,
   },
   menuItemDanger: {
@@ -396,13 +389,13 @@ const styles = StyleSheet.create({
     borderColor: '#ffebee',
   },
   iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 8,
     backgroundColor: '#f3e5f5',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
   iconContainerDanger: {
     backgroundColor: '#ffebee',
@@ -417,16 +410,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   menuItemTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 3,
+    marginBottom: 2,
   },
   menuItemTitleDanger: {
     color: '#d32f2f',
   },
   menuItemSubtitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#999',
   },
   chevron: {
@@ -436,34 +429,34 @@ const styles = StyleSheet.create({
   },
   logoutButtonContainer: {
     marginHorizontal: 12,
-    marginTop: 10,
-    marginBottom: 20,
-    borderRadius: 12,
+    marginTop: 8,
+    marginBottom: 16,
+    borderRadius: 10,
     overflow: 'hidden',
     shadowColor: '#d32f2f',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    elevation: 2,
   },
   logoutButton: {
     flexDirection: 'row',
-    padding: 16,
-    paddingVertical: 18,
+    padding: 14,
+    paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    gap: 8,
   },
   logoutButtonText: {
     color: '#d32f2f',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
   },
   versionText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#999',
     textAlign: 'center',
-    marginTop: 15,
+    marginTop: 12,
     fontWeight: '500',
   },
 });

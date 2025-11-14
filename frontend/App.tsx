@@ -8,11 +8,21 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
 import HomeScreen from './screens/HomeScreen';
+import SubjectsScreen from './screens/SubjectsScreen';
+import LessonScreen from './screens/LessonScreen';
 import MenuScreen from './screens/MenuScreen';
 import QuizScreen from './screens/QuizScreen';
 import ResultsScreen from './screens/ResultsScreen';
 import AIAssistantScreen from './screens/AIAssistantScreen';
 import ResourcesScreen from './screens/ResourcesScreen';
+import ProfileScreenNew from './screens/ProfileScreenNew';
+import HistoryScreen from './screens/HistoryScreen';
+import StatisticsScreen from './screens/StatisticsScreen';
+import NotificationScreen from './screens/NotificationScreen';
+import ThemeScreen from './screens/ThemeScreen';
+import ClearCacheScreen from './screens/ClearCacheScreen';
+import ContactUsScreen from './screens/ContactUsScreen';
+import AboutScreen from './screens/AboutScreen';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -53,6 +63,8 @@ const commonScreenOptions = {
 const HomeStack = () => (
   <Stack.Navigator screenOptions={commonScreenOptions}>
     <Stack.Screen name="HomeMain" component={HomeScreen} options={{ title: 'Exam Prep' }} />
+    <Stack.Screen name="Subjects" component={SubjectsScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="Lesson" component={LessonScreen} options={{ headerShown: false }} />
   </Stack.Navigator>
 );
 
@@ -80,6 +92,20 @@ const AIStack = () => (
   </Stack.Navigator>
 );
 
+const MenuStack = () => (
+  <Stack.Navigator screenOptions={commonScreenOptions}>
+    <Stack.Screen name="MenuMain" component={MenuScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="Profile" component={ProfileScreenNew} options={{ headerShown: false }} />
+    <Stack.Screen name="History" component={HistoryScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="Statistics" component={StatisticsScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="Notification" component={NotificationScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="Theme" component={ThemeScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="ClearCache" component={ClearCacheScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="ContactUs" component={ContactUsScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="About" component={AboutScreen} options={{ headerShown: false }} />
+  </Stack.Navigator>
+);
+
 const AppTabs = () => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
@@ -101,7 +127,7 @@ const AppTabs = () => (
     <Tab.Screen name="Learn" component={ResourcesStack} options={{ title: 'Learn' }} />
     <Tab.Screen name="AI Assistant" component={AIStack} options={{ title: 'AI' }} />
     <Tab.Screen name="Quiz" component={QuizStack} options={{ title: 'Quiz' }} />
-    <Tab.Screen name="Menu" component={MenuScreen} options={{ title: 'Menu' }} />
+    <Tab.Screen name="Menu" component={MenuStack} options={{ title: 'Menu' }} />
   </Tab.Navigator>
 );
 

@@ -12,27 +12,32 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { useAuth } from '../contexts/AuthContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 interface CatalogItem {
   id: string;
   title: string;
   description: string;
-  icon: string;
+  iconName: string;
+  iconFamily: 'ionicons' | 'materialcommunity';
+  iconColor: string;
   level: string;
   subject: string;
 }
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const { user } = useAuth();
 
-  // Learning Catalog for Rural Students
+  // Learning Catalog for Rural Students with Modern Icons
   const learningCatalog: CatalogItem[] = [
     {
       id: '1',
       title: 'Mathematics',
       description: 'Basic to advanced math concepts',
-      icon: '🔢',
+      iconName: 'calculator-variant',
+      iconFamily: 'materialcommunity',
+      iconColor: '#FF6B6B',
       level: 'All Levels',
       subject: 'Math',
     },
@@ -40,7 +45,9 @@ export default function HomeScreen() {
       id: '2',
       title: 'Science',
       description: 'Physics, Chemistry, Biology',
-      icon: '🔬',
+      iconName: 'test-tube',
+      iconFamily: 'materialcommunity',
+      iconColor: '#4ECDC4',
       level: 'All Levels',
       subject: 'Science',
     },
@@ -48,7 +55,9 @@ export default function HomeScreen() {
       id: '3',
       title: 'English Language',
       description: 'Grammar, Vocabulary, Reading',
-      icon: '📖',
+      iconName: 'book-open-variant',
+      iconFamily: 'materialcommunity',
+      iconColor: '#45B7D1',
       level: 'All Levels',
       subject: 'English',
     },
@@ -56,7 +65,9 @@ export default function HomeScreen() {
       id: '4',
       title: 'Hindi',
       description: 'भाषा और साहित्य',
-      icon: '📝',
+      iconName: 'language-typescript',
+      iconFamily: 'materialcommunity',
+      iconColor: '#F7B731',
       level: 'All Levels',
       subject: 'Hindi',
     },
@@ -64,7 +75,9 @@ export default function HomeScreen() {
       id: '5',
       title: 'Social Studies',
       description: 'History, Geography, Civics',
-      icon: '🌍',
+      iconName: 'globe-model',
+      iconFamily: 'materialcommunity',
+      iconColor: '#A29BFE',
       level: 'All Levels',
       subject: 'Social',
     },
@@ -72,7 +85,9 @@ export default function HomeScreen() {
       id: '6',
       title: 'Computer Basics',
       description: 'Digital literacy for beginners',
-      icon: '💻',
+      iconName: 'laptop',
+      iconFamily: 'materialcommunity',
+      iconColor: '#6C5CE7',
       level: 'Beginner',
       subject: 'Computer',
     },
@@ -80,7 +95,9 @@ export default function HomeScreen() {
       id: '7',
       title: 'Agriculture',
       description: 'Farming techniques and knowledge',
-      icon: '🌾',
+      iconName: 'sprout',
+      iconFamily: 'materialcommunity',
+      iconColor: '#00B894',
       level: 'All Levels',
       subject: 'Agriculture',
     },
@@ -88,7 +105,9 @@ export default function HomeScreen() {
       id: '8',
       title: 'General Knowledge',
       description: 'Current affairs and facts',
-      icon: '🧠',
+      iconName: 'brain',
+      iconFamily: 'materialcommunity',
+      iconColor: '#FD79A8',
       level: 'All Levels',
       subject: 'GK',
     },
@@ -102,19 +121,15 @@ export default function HomeScreen() {
   }, []);
 
   const handleCourseSelect = (course: CatalogItem) => {
-    Alert.alert(
-      `${course.title}`,
-      `Learn about ${course.description.toLowerCase()}\n\nLevel: ${course.level}`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Start Learning',
-          onPress: () => {
-            Alert.alert('Coming Soon', 'Course content will be available soon!');
-          },
-        },
-      ]
-    );
+    navigation.navigate('Subjects', { subject: course });
+  };
+
+  const renderIcon = (item: CatalogItem) => {
+    const iconProps = { size: 40, color: item.iconColor };
+    if (item.iconFamily === 'ionicons') {
+      return <Ionicons name={item.iconName as any} {...iconProps} />;
+    }
+    return <MaterialCommunityIcons name={item.iconName} {...iconProps} />;
   };
 
   return (
@@ -150,7 +165,9 @@ export default function HomeScreen() {
                 onPress={() => handleCourseSelect(item)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.cardIcon}>{item.icon}</Text>
+                <View style={[styles.iconContainer, { backgroundColor: item.iconColor + '20' }]}>
+                  {renderIcon(item)}
+                </View>
                 <Text style={styles.cardTitle}>{item.title}</Text>
                 <Text style={styles.cardDescription}>{item.description}</Text>
                 <View style={styles.cardFooter}>
@@ -244,6 +261,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  iconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   cardIcon: {
     fontSize: 40,

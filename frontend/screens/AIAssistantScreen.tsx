@@ -132,9 +132,18 @@ export default function AIAssistantScreen() {
         const text = audioPath.replace('expo-speech://', '');
         console.log('Using Expo Speech fallback for text:', text.substring(0, 50) + '...');
         
-        // Use TextToSpeechModule's playAudio for speech fallback
-        await TextToSpeechModule.playAudio(audioPath);
+        // Set playing state before starting speech
         setPlayingMessageId(messageId);
+        
+        // Use TextToSpeechModule's playAudio for speech fallback
+        try {
+          await TextToSpeechModule.playAudio(audioPath);
+        } catch (error) {
+          console.error('Speech playback error:', error);
+        }
+        
+        // Clear playing state after speech completes
+        setPlayingMessageId(null);
         return;
       }
 
@@ -148,21 +157,26 @@ export default function AIAssistantScreen() {
       const sound = new Audio.Sound();
       try {
         await sound.loadAsync({ uri: audioPath });
-        await sound.playAsync();
         soundRef.current = sound;
         setPlayingMessageId(messageId);
+        
+        await sound.playAsync();
 
-        // Handle playback status
+        // Handle playback status - update UI when finished
         sound.setOnPlaybackStatusUpdate((status: any) => {
           if (status.didJustFinish) {
+            console.log('Audio finished playing');
             setPlayingMessageId(null);
+            soundRef.current = null;
           }
         });
       } catch (error) {
+        setPlayingMessageId(null);
         throw error;
       }
     } catch (error) {
       console.error('Error playing audio:', error);
+      setPlayingMessageId(null);
       Alert.alert('Error', 'Failed to play audio');
     }
   };

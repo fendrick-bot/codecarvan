@@ -44,35 +44,57 @@ export default function MenuDrawer({ navigation }: any) {
       },
     },
     {
-      id: 'progress',
-      label: 'My Progress',
-      icon: 'trending-up',
+      id: 'history',
+      label: 'Quiz History',
+      icon: 'time',
       onPress: () => {
-        Alert.alert('Progress', 'Coming soon: Track your learning progress');
+        navigation.navigate('History');
+        navigation.closeDrawer();
       },
     },
     {
-      id: 'downloads',
-      label: 'Offline Resources',
-      icon: 'download',
+      id: 'statistics',
+      label: 'Statistics',
+      icon: 'bar-chart',
       onPress: () => {
-        Alert.alert('Downloads', 'Coming soon: Download resources for offline access');
+        navigation.navigate('Statistics');
+        navigation.closeDrawer();
       },
     },
     {
-      id: 'settings',
-      label: 'Settings',
-      icon: 'settings',
+      id: 'notifications',
+      label: 'Notifications',
+      icon: 'notifications',
       onPress: () => {
-        Alert.alert('Settings', 'Coming soon: Customize your learning experience');
+        navigation.navigate('Notification');
+        navigation.closeDrawer();
       },
     },
     {
-      id: 'help',
-      label: 'Help & Support',
-      icon: 'help-circle',
+      id: 'theme',
+      label: 'Theme & Display',
+      icon: 'palette',
       onPress: () => {
-        Alert.alert('Help', 'Contact support: support@examprep.app\nVersion: 1.0.0');
+        navigation.navigate('Theme');
+        navigation.closeDrawer();
+      },
+    },
+    {
+      id: 'cache',
+      label: 'Storage & Cache',
+      icon: 'trash',
+      onPress: () => {
+        navigation.navigate('ClearCache');
+        navigation.closeDrawer();
+      },
+    },
+    {
+      id: 'contact',
+      label: 'Contact Us',
+      icon: 'mail',
+      onPress: () => {
+        navigation.navigate('ContactUs');
+        navigation.closeDrawer();
       },
     },
     {
@@ -80,10 +102,8 @@ export default function MenuDrawer({ navigation }: any) {
       label: 'About',
       icon: 'information-circle',
       onPress: () => {
-        Alert.alert(
-          'About ExamPrep',
-          'ExamPrep v1.0.0\n\nAI-powered learning assistant for rural students\n\n© 2025 ExamPrep Team'
-        );
+        navigation.navigate('About');
+        navigation.closeDrawer();
       },
     },
   ];
