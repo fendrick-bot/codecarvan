@@ -14,11 +14,11 @@ import { quizAPI } from '../services/api';
 
 type RootStackParamList = {
   Home: undefined;
-  Quiz: { questions: Question[] };
+  QuizMain: { questions: Question[] };
   Results: { results: QuizResults };
 };
 
-type QuizScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Quiz'>;
+type QuizScreenNavigationProp = StackNavigationProp<RootStackParamList, 'QuizMain'>;
 
 interface Question {
   id: number;
@@ -41,12 +41,20 @@ interface Answer {
 }
 
 interface Props {
-  route: { params: { questions: Question[] } };
+  route: { params?: { questions?: Question[] } };
   navigation: QuizScreenNavigationProp;
 }
 
 export default function QuizScreen({ route, navigation }: Props) {
-  const { questions } = route.params;
+  const questions = route.params?.questions || [];
+  
+  if (!questions || questions.length === 0) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.question}>No questions available. Please select a category and try again.</Text>
+      </View>
+    );
+  }
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);

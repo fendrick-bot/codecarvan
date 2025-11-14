@@ -11,7 +11,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 
 type RootStackParamList = {
   Home: undefined;
-  Quiz: { questions: any[] };
+  QuizMain: { questions: any[] };
   Results: { results: QuizResults };
 };
 

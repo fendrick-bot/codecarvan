@@ -15,7 +15,7 @@ import { questionsAPI, categoriesAPI } from '../services/api';
 
 type RootStackParamList = {
   Home: undefined;
-  Quiz: { questions: Question[] };
+  QuizMain: { questions: Question[] };
   Results: { results: QuizResults };
 };
 
@@ -85,7 +85,7 @@ export default function HomeScreen({ navigation }: Props) {
           Alert.alert('No Questions', 'No questions available for this category.');
           return;
         }
-        navigation.navigate('Quiz', { questions: response.data });
+        navigation.navigate('QuizMain', { questions: response.data });
       }
     } catch (error) {
       console.error('Error fetching questions:', error);
