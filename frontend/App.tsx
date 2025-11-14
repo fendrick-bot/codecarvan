@@ -3,6 +3,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createDrawerNavigator } from '@react-navigation/drawer';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginScreen from './screens/LoginScreen';
@@ -12,7 +13,8 @@ import QuizScreen from './screens/QuizScreen';
 import ResultsScreen from './screens/ResultsScreen';
 import AIAssistantScreen from './screens/AIAssistantScreen';
 import ResourcesScreen from './screens/ResourcesScreen';
-import ProfileScreen from './screens/ProfileScreen';
+import ProfileScreenNew from './screens/ProfileScreenNew';
+import MenuDrawer from './screens/MenuDrawer';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -64,7 +66,7 @@ const QuizStack = () => (
       options={{ title: 'Quiz' }}
       initialParams={{ questions: [] }}
     />
-    <Stack.Screen name="Results" component={ResultsScreen} options={{ title: 'Results' }} />
+    <Stack.Screen name="Results" component={ResultsScreen as unknown as React.ComponentType<any>} options={{ title: 'Results' }} />
   </Stack.Navigator>
 );
 
