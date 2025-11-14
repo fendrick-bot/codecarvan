@@ -11,8 +11,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  Linking,
-  Platform,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,15 +18,19 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../contexts/AuthContext';
 import { StackNavigationProp } from '@react-navigation/stack';
 
-type RootStackParamList = {
-  MainTabs: undefined;
-  HomeTab: undefined;
-  MenuTab: undefined;
-  Quiz: { questions: any[] };
-  Results: { results: any };
+type MenuStackParamList = {
+  MenuMain: undefined;
+  Profile: undefined;
+  History: undefined;
+  Statistics: undefined;
+  Notification: undefined;
+  Theme: undefined;
+  ClearCache: undefined;
+  ContactUs: undefined;
+  About: undefined;
 };
 
-type MenuScreenNavigationProp = StackNavigationProp<RootStackParamList, 'MenuTab'>;
+type MenuScreenNavigationProp = StackNavigationProp<MenuStackParamList, 'MenuMain'>;
 
 interface Props {
   navigation: MenuScreenNavigationProp;

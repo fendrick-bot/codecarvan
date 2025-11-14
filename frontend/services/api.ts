@@ -291,3 +291,56 @@ export const healthAPI = {
   },
 };
 
+// Resources API
+export const resourcesAPI = {
+  // Upload resource PDF
+  uploadPDF: async (formData: FormData): Promise<ApiResponse<any>> => {
+    try {
+      const token = await tokenService.getToken();
+      
+      const headers: HeadersInit = {};
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.RESOURCES.UPLOAD}`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { error: data.error || 'Upload failed' };
+      }
+
+      return { data };
+    } catch (error: any) {
+      console.error('Resource upload error:', error);
+      return { error: error.message || 'Network error' };
+    }
+  },
+
+  // Get all resources
+  getAll: async (subject?: string): Promise<ApiResponse<any[]>> => {
+    const endpoint = subject
+      ? `${API_ENDPOINTS.RESOURCES.LIST}?subject=${subject}`
+      : API_ENDPOINTS.RESOURCES.LIST;
+    return await apiRequest<any[]>(endpoint);
+  },
+
+  // Get resource by ID
+  getById: async (id: number): Promise<ApiResponse<any>> => {
+    return await apiRequest<any>(API_ENDPOINTS.RESOURCES.BY_ID(id));
+  },
+
+  // Delete resource
+  delete: async (id: number): Promise<ApiResponse<{ message: string }>> => {
+    return await apiRequest<{ message: string }>(API_ENDPOINTS.RESOURCES.DELETE(id), {
+      method: 'DELETE',
+    });
+  },
+};
+

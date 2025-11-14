@@ -48,6 +48,20 @@ export const initDatabase = async (): Promise<void> => {
     )
   `);
 
+    // Create resources table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS resources (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        subject VARCHAR(100) NOT NULL,
+        file_path VARCHAR(500) NOT NULL,
+        file_name VARCHAR(255) NOT NULL,
+        file_size INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Ensure the pgvector extension is available before creating vector-typed columns
     await pool.query(`CREATE EXTENSION IF NOT EXISTS vector`);
 

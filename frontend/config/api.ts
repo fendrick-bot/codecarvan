@@ -21,5 +21,11 @@ export const API_ENDPOINTS = {
   },
   CATEGORIES: '/categories',
   HEALTH: '/health',
+  RESOURCES: {
+    UPLOAD: '/resources/upload',
+    LIST: '/resources/list',
+    BY_ID: (id: number) => `/resources/${id}`,
+    DELETE: (id: number) => `/resources/${id}`,
+  },
 };
 

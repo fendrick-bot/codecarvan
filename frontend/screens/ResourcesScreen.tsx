@@ -15,6 +15,8 @@ import { Picker } from '@react-native-picker/picker';
 import * as DocumentPicker from 'expo-document-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
+import { resourcesAPI } from '../services/api';
+
 interface Resource {
   id: string;
   title: string;
@@ -26,22 +28,7 @@ interface Resource {
 const RESOURCES_STORAGE_KEY = 'uploaded_resources';
 
 export default function ResourcesScreen({ navigation }: any) {
-  const [resources, setResources] = useState<Resource[]>([
-    {
-      id: '1',
-      title: 'Basic Math: Number Sense',
-      subject: 'Math',
-      description: 'Learn the fundamentals of numbers and basic operations',
-      fileName: 'math-basics.pdf',
-    },
-    {
-      id: '2',
-      title: 'Reading Practice: Short Stories',
-      subject: 'English',
-      description: 'Improve reading comprehension with engaging short stories',
-      fileName: 'reading-stories.pdf',
-    },
-  ]);
+  const [resources, setResources] = useState<Resource[]>([]);
 
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState('Math');
@@ -49,37 +36,52 @@ export default function ResourcesScreen({ navigation }: any) {
   const [description, setDescription] = useState('');
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const subjects = ['Math', 'Science', 'English', 'Social', 'Computer', 'Agriculture', 'GK', 'Hindi'];
 
   const loadResources = useCallback(async () => {
+    setIsLoading(true);
     try {
-      const initialResources = [
-        {
-          id: '1',
-          title: 'Basic Math: Number Sense',
-          subject: 'Math',
-          description: 'Learn the fundamentals of numbers and basic operations',
-          fileName: 'math-basics.pdf',
-        },
-        {
-          id: '2',
-          title: 'Reading Practice: Short Stories',
-          subject: 'English',
-          description: 'Improve reading comprehension with engaging short stories',
-          fileName: 'reading-stories.pdf',
-        },
-      ];
+      // Fetch resources from API
+      const response = await resourcesAPI.getAll();
       
-      const savedResources = await AsyncStorage.getItem(RESOURCES_STORAGE_KEY);
-      if (savedResources) {
-        const parsed = JSON.parse(savedResources);
-        setResources([...initialResources, ...parsed]);
+      if (response.data) {
+        const apiResources = response.data.map((resource: any) => ({
+          id: String(resource.id),
+          title: resource.title,
+          subject: resource.subject,
+          description: resource.description,
+          fileName: resource.file_name,
+        }));
+        setResources(apiResources);
       } else {
-        setResources(initialResources);
+        // Fallback to local storage if API fails
+        const savedResources = await AsyncStorage.getItem(RESOURCES_STORAGE_KEY);
+        if (savedResources) {
+          const parsed = JSON.parse(savedResources);
+          setResources(parsed);
+        } else {
+          setResources([]);
+        }
       }
     } catch (error) {
       console.log('Error loading resources:', error);
+      // Fallback to local storage
+      try {
+        const savedResources = await AsyncStorage.getItem(RESOURCES_STORAGE_KEY);
+        if (savedResources) {
+          const parsed = JSON.parse(savedResources);
+          setResources(parsed);
+        } else {
+          setResources([]);
+        }
+      } catch (storageError) {
+        console.log('Error loading from storage:', storageError);
+        setResources([]);
+      }
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -124,35 +126,52 @@ export default function ResourcesScreen({ navigation }: any) {
     setIsUploading(true);
 
     try {
-      // Simulate upload delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('description', description);
+      formData.append('subject', selectedSubject);
+      formData.append('pdf', {
+        uri: selectedFile.uri,
+        name: selectedFile.name,
+        type: 'application/pdf',
+      } as any);
 
+      // Upload to API
+      const response = await resourcesAPI.uploadPDF(formData);
+
+      if (response.error) {
+        Alert.alert('Upload Error', response.error);
+        setIsUploading(false);
+        return;
+      }
+
+      // Create new resource object
       const newResource: Resource = {
-        id: String(Date.now()),
+        id: String(response.data?.resourceId || Date.now()),
         title,
         subject: selectedSubject,
         description,
         fileName: selectedFile.name,
       };
 
-      const updatedResources = [...resources, newResource];
-      setResources(updatedResources);
-
-      // Save to AsyncStorage
+      // Save to local storage
       try {
-        // Get existing saved resources
         const savedResources = await AsyncStorage.getItem(RESOURCES_STORAGE_KEY);
         let existingResources: Resource[] = [];
         if (savedResources) {
           existingResources = JSON.parse(savedResources);
         }
         
-        // Add new resource and save
         const allResources = [...existingResources, newResource];
         await AsyncStorage.setItem(RESOURCES_STORAGE_KEY, JSON.stringify(allResources));
       } catch (storageError) {
         console.log('Error saving to storage:', storageError);
       }
+
+      // Update UI
+      const updatedResources = [...resources, newResource];
+      setResources(updatedResources);
 
       // Reset form
       setTitle('');
@@ -164,6 +183,7 @@ export default function ResourcesScreen({ navigation }: any) {
       Alert.alert('Success', 'Resource uploaded successfully!');
     } catch (err) {
       Alert.alert('Error', 'Failed to upload resource');
+      console.error('Upload error:', err);
     } finally {
       setIsUploading(false);
     }
@@ -179,34 +199,43 @@ export default function ResourcesScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>Learning Resources</Text>
-        <Text style={styles.body}>
-          Curated lessons, PDFs, and short videos suited for low-bandwidth
-          environments. Tap an item to open details.
-        </Text>
+      {isLoading ? (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loaderText}>Loading resources...</Text>
+        </View>
+      ) : (
+        <>
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            <Text style={styles.title}>Learning Resources</Text>
+            <Text style={styles.body}>
+              Curated lessons, PDFs, and short videos suited for low-bandwidth
+              environments. Tap an item to open details.
+            </Text>
 
-        {resources.map((resource) => (
+            {resources.map((resource) => (
+              <TouchableOpacity
+                key={resource.id}
+                style={styles.card}
+                onPress={() => { /* open resource */ }}
+              >
+                <Text style={styles.cardTitle}>{resource.title}</Text>
+                <Text style={styles.cardSubject}>{resource.subject}</Text>
+                <Text style={styles.cardDescription}>{resource.description}</Text>
+                <Text style={styles.cardSubtitle}>PDF · {resource.fileName}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          {/* Floating Upload Button Above Tab */}
           <TouchableOpacity
-            key={resource.id}
-            style={styles.card}
-            onPress={() => { /* open resource */ }}
+            style={styles.floatingUploadButton}
+            onPress={() => setShowUploadDialog(true)}
           >
-            <Text style={styles.cardTitle}>{resource.title}</Text>
-            <Text style={styles.cardSubject}>{resource.subject}</Text>
-            <Text style={styles.cardDescription}>{resource.description}</Text>
-            <Text style={styles.cardSubtitle}>PDF · {resource.fileName}</Text>
+            <Text style={styles.floatingUploadButtonText}>+ Upload Resource</Text>
           </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Floating Upload Button Above Tab */}
-      <TouchableOpacity
-        style={styles.floatingUploadButton}
-        onPress={() => setShowUploadDialog(true)}
-      >
-        <Text style={styles.floatingUploadButtonText}>+ Upload Resource</Text>
-      </TouchableOpacity>
+        </>
+      )}
 
       {/* Upload Dialog Modal */}
       <Modal
@@ -304,6 +333,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loaderText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#666',
   },
   scrollContent: {
     padding: 16,
