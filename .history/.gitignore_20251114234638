@@ -7,7 +7,7 @@ node_modules/
 .expo-shared/
 dist/
 web-build/
-gemma3_instruct270m
+gemma3_instructr
 # Environment variables
 .env
 .env.local
