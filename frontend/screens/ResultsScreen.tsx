@@ -10,10 +10,8 @@ import { StatusBar } from 'expo-status-bar';
 import { StackNavigationProp } from '@react-navigation/stack';
 
 type RootStackParamList = {
-  MainTabs: undefined;
-  HomeTab: undefined;
-  MenuTab: undefined;
-  Quiz: { questions: any[] };
+  Home: undefined;
+  QuizMain: { questions: any[] };
   Results: { results: QuizResults };
 };
 

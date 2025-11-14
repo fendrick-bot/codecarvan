@@ -16,9 +16,8 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { questionsAPI, categoriesAPI } from '../services/api';
 
 type RootStackParamList = {
-  HomeTab: undefined;
-  MainTabs: undefined;
-  Quiz: { questions: Question[] };
+  Home: undefined;
+  QuizMain: { questions: Question[] };
   Results: { results: QuizResults };
 };
 
@@ -206,9 +205,7 @@ export default function HomeScreen({ navigation }: Props) {
           setStartingQuiz(false);
           return;
         }
-        
-        // Navigate to quiz screen
-        navigation.navigate('Quiz', { questions: response.data });
+        navigation.navigate('QuizMain', { questions: response.data });
       }
     } catch (error) {
       console.error('Error fetching questions:', error);
