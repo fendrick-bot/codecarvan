@@ -9,6 +9,8 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
 import HomeScreen from './screens/HomeScreen';
+import MenuScreen from './screens/MenuScreen';
+import ModelScreen from './screens/ModelScreen';
 import QuizScreen from './screens/QuizScreen';
 import ResultsScreen from './screens/ResultsScreen';
 import AIAssistantScreen from './screens/AIAssistantScreen';
