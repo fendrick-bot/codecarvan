@@ -13,7 +13,9 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { quizAPI } from '../services/api';
 
 type RootStackParamList = {
-  Home: undefined;
+  MainTabs: undefined;
+  HomeTab: undefined;
+  MenuTab: undefined;
   Quiz: { questions: Question[] };
   Results: { results: QuizResults };
 };
