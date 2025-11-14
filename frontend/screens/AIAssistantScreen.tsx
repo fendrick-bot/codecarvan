@@ -88,6 +88,12 @@ export default function AIAssistantScreen() {
   };
 
   const generateAudioFromText = async (text: string, messageId: string) => {
+    // Prevent duplicate calls
+    if (isGeneratingAudio) {
+      console.log('Audio generation already in progress, ignoring duplicate request');
+      return;
+    }
+
     setIsGeneratingAudio(true);
     try {
       console.log('Starting audio generation using TextToSpeechModule');
@@ -121,6 +127,17 @@ export default function AIAssistantScreen() {
 
   const playAudio = async (audioPath: string, messageId: string) => {
     try {
+      // Check if this is an Expo Speech fallback
+      if (audioPath.startsWith('expo-speech://')) {
+        const text = audioPath.replace('expo-speech://', '');
+        console.log('Using Expo Speech fallback for text:', text.substring(0, 50) + '...');
+        
+        // Use TextToSpeechModule's playAudio for speech fallback
+        await TextToSpeechModule.playAudio(audioPath);
+        setPlayingMessageId(messageId);
+        return;
+      }
+
       // Stop current playback if any
       if (soundRef.current) {
         await soundRef.current.stopAsync();
@@ -152,6 +169,9 @@ export default function AIAssistantScreen() {
 
   const stopAudio = async () => {
     try {
+      // Stop Expo Speech if active
+      await TextToSpeechModule.stopAudio(soundRef.current || undefined);
+      
       if (soundRef.current) {
         await soundRef.current.stopAsync();
       }

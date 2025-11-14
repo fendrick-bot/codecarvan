@@ -42,6 +42,20 @@ interface Answer {
   selectedAnswer: number;
 }
 
+interface Category {
+  id: string;
+  name: string;
+  icon: string;
+  subcategories: SubCategory[];
+  color: string;
+}
+
+interface SubCategory {
+  id: string;
+  name: string;
+  questionCount: number;
+}
+
 interface Props {
   route: { params?: { questions?: Question[] } };
   navigation: QuizScreenNavigationProp;
@@ -49,14 +63,219 @@ interface Props {
 
 export default function QuizScreen({ route, navigation }: Props) {
   const questions = route.params?.questions || [];
-  
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+
+  const categories: Category[] = [
+    {
+      id: '1',
+      name: 'Mathematics',
+      icon: '🔢',
+      color: '#FF6B6B',
+      subcategories: [
+        { id: '1-1', name: 'Algebra', questionCount: 15 },
+        { id: '1-2', name: 'Geometry', questionCount: 12 },
+        { id: '1-3', name: 'Calculus', questionCount: 10 },
+        { id: '1-4', name: 'Statistics', questionCount: 8 },
+      ],
+    },
+    {
+      id: '2',
+      name: 'Science',
+      icon: '🔬',
+      color: '#4ECDC4',
+      subcategories: [
+        { id: '2-1', name: 'Physics', questionCount: 20 },
+        { id: '2-2', name: 'Chemistry', questionCount: 18 },
+        { id: '2-3', name: 'Biology', questionCount: 16 },
+      ],
+    },
+    {
+      id: '3',
+      name: 'English',
+      icon: '📖',
+      color: '#95E1D3',
+      subcategories: [
+        { id: '3-1', name: 'Grammar', questionCount: 14 },
+        { id: '3-2', name: 'Vocabulary', questionCount: 16 },
+        { id: '3-3', name: 'Reading Comprehension', questionCount: 12 },
+      ],
+    },
+    {
+      id: '4',
+      name: 'Hindi',
+      icon: '📝',
+      color: '#F38181',
+      subcategories: [
+        { id: '4-1', name: 'व्याकरण', questionCount: 13 },
+        { id: '4-2', name: 'साहित्य', questionCount: 10 },
+        { id: '4-3', name: 'समझ', questionCount: 11 },
+      ],
+    },
+    {
+      id: '5',
+      name: 'Social Studies',
+      icon: '🌍',
+      color: '#AA96DA',
+      subcategories: [
+        { id: '5-1', name: 'History', questionCount: 17 },
+        { id: '5-2', name: 'Geography', questionCount: 15 },
+        { id: '5-3', name: 'Civics', questionCount: 14 },
+      ],
+    },
+    {
+      id: '6',
+      name: 'General Knowledge',
+      icon: '🧠',
+      color: '#FCBAD3',
+      subcategories: [
+        { id: '6-1', name: 'Current Affairs', questionCount: 20 },
+        { id: '6-2', name: 'Science & Nature', questionCount: 18 },
+        { id: '6-3', name: 'Sports', questionCount: 12 },
+      ],
+    },
+  ];
+
   if (!questions || questions.length === 0) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.question}>No questions available. Please select a category and try again.</Text>
-      </View>
-    );
+    if (!selectedCategory) {
+      return <CategorySelectionScreen categories={categories} onSelectCategory={setSelectedCategory} />;
+    } else {
+      return <SubCategorySelectionScreen category={selectedCategory} onBack={() => setSelectedCategory(null)} />;
+    }
   }
+
+  return <QuizContentScreen questions={questions} navigation={navigation} />;
+}
+
+// Category Selection Screen
+function CategorySelectionScreen({
+  categories,
+  onSelectCategory,
+}: {
+  categories: Category[];
+  onSelectCategory: (category: Category) => void;
+}) {
+  return (
+    <View style={styles.container}>
+      <StatusBar style="light" />
+      
+      {/* Header */}
+      <LinearGradient
+        colors={['#6200ee', '#7c4dff']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
+        <Text style={styles.headerTitle}>Select a Category</Text>
+        <Text style={styles.headerSubtitle}>Choose a subject to begin your quiz</Text>
+      </LinearGradient>
+
+      {/* Categories Grid */}
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.categoriesGrid}>
+          {categories.map((category) => (
+            <TouchableOpacity
+              key={category.id}
+              style={[styles.categoryCard, { borderTopColor: category.color, borderTopWidth: 4 }]}
+              onPress={() => onSelectCategory(category)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.categoryIcon}>{category.icon}</Text>
+              <Text style={styles.categoryName}>{category.name}</Text>
+              <Text style={styles.categoryCount}>
+                {category.subcategories.length} sub-categories
+              </Text>
+              <View style={styles.categoryArrow}>
+                <Ionicons name="chevron-forward" size={20} color="#6200ee" />
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+// Sub-Category Selection Screen
+function SubCategorySelectionScreen({
+  category,
+  onBack,
+}: {
+  category: Category;
+  onBack: () => void;
+}) {
+  const handleStartQuiz = (subcategory: SubCategory) => {
+    Alert.alert(
+      'Start Quiz',
+      `Start ${category.name} - ${subcategory.name} quiz with ${subcategory.questionCount} questions?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Start',
+          onPress: () => {
+            Alert.alert('Quiz Started', 'Quiz questions will load here!');
+          },
+        },
+      ]
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      <StatusBar style="light" />
+      
+      {/* Header */}
+      <LinearGradient
+        colors={['#6200ee', '#7c4dff']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
+        <TouchableOpacity style={styles.backButton} onPress={onBack}>
+          <Ionicons name="chevron-back" size={28} color="#fff" />
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>{category.name}</Text>
+          <Text style={styles.headerSubtitle}>Select a sub-category to continue</Text>
+        </View>
+      </LinearGradient>
+
+      {/* Sub-Categories List */}
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.subcategoryScrollContent}>
+        {category.subcategories.map((subcategory, index) => (
+          <TouchableOpacity
+            key={subcategory.id}
+            style={[
+              styles.subcategoryCard,
+              { borderLeftColor: category.color, borderLeftWidth: 4 },
+            ]}
+            onPress={() => handleStartQuiz(subcategory)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.subcategoryHeader}>
+              <View>
+                <Text style={styles.subcategoryName}>{subcategory.name}</Text>
+                <View style={styles.questionCountBadge}>
+                  <Ionicons name="help-circle" size={14} color="#fff" />
+                  <Text style={styles.questionCountText}>{subcategory.questionCount} Questions</Text>
+                </View>
+              </View>
+              <View style={[styles.subcategoryIndex, { backgroundColor: category.color }]}>
+                <Text style={styles.subcategoryIndexText}>{index + 1}</Text>
+              </View>
+            </View>
+            <View style={styles.subcategoryFooter}>
+              <Text style={styles.difficulty}>Difficulty: Medium</Text>
+              <Ionicons name="arrow-forward" size={18} color="#6200ee" />
+            </View>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+// Quiz Content Screen (original quiz)
+function QuizContentScreen({ questions, navigation }: { questions: Question[]; navigation: QuizScreenNavigationProp }) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -276,6 +495,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f7fa',
   },
+  // ===== Header Styles =====
   header: {
     paddingTop: 35,
     paddingHorizontal: 20,
@@ -284,6 +504,140 @@ const styles = StyleSheet.create({
   headerContent: {
     zIndex: 1,
   },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 6,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontWeight: '500',
+  },
+  backButton: {
+    marginBottom: 12,
+  },
+
+  // ===== Scroll Views =====
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 30,
+  },
+  subcategoryScrollContent: {
+    padding: 16,
+    paddingBottom: 30,
+  },
+
+  // ===== Category Grid =====
+  categoriesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  categoryCard: {
+    width: '48%',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  categoryIcon: {
+    fontSize: 36,
+    marginBottom: 10,
+  },
+  categoryName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  categoryCount: {
+    fontSize: 12,
+    color: '#999',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  categoryArrow: {
+    alignSelf: 'flex-end',
+  },
+
+  // ===== Sub-Category Cards =====
+  subcategoryCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 18,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  subcategoryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  subcategoryName: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 8,
+  },
+  questionCountBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#6200ee',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 6,
+    width: 'fit-content',
+  },
+  questionCountText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  subcategoryIndex: {
+    width: 45,
+    height: 45,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  subcategoryIndexText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  subcategoryFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  difficulty: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+  },
+
+  // ===== Quiz Content Styles =====
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
