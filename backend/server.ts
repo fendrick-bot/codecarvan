@@ -11,6 +11,9 @@ import questionRoutes from './routes/questionRoutes.js';
 import quizRoutes from './routes/quizRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
+import fileUploadRoutes from './routes/fileupload.js';
+
+
 
 // Import error handling middleware
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
@@ -36,6 +39,8 @@ app.use('/api/questions', questionRoutes);
 app.use('/api/quiz', quizRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/health', healthRoutes);
+
+app.use('/api/uploads', fileUploadRoutes);
 
 // Error handling middleware (must be after all routes)
 app.use(notFoundHandler);
