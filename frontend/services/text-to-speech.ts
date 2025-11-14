@@ -1,5 +1,5 @@
-import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
-import RNFS from 'react-native-fs';
+// Text-to-Speech Service using ElevenLabs
+import * as FileSystem from 'expo-file-system';
 
 interface TextToSpeechOptions {
   text: string;
@@ -24,32 +24,44 @@ const TextToSpeechModule = {
     fileName?: string
   ): Promise<string> => {
     try {
-      // Initialize ElevenLabs client
-      const client = new ElevenLabsClient({
-        apiKey: apiKey,
+      // Call ElevenLabs API with query parameter for output format
+      const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'xi-api-key': apiKey,
+        },
+        body: JSON.stringify({
+          text: text,
+          model_id: 'eleven_multilingual_v2',
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.75,
+          },
+        }),
       });
 
-      // Generate audio from text
-      const audio = await client.textToSpeech.convert(voiceId, {
-        outputFormat: "mp3_44100_128",
-        text: text,
-        modelId: "eleven_multilingual_v2",
-      });
-
-      // Convert audio stream to buffer
-      const chunks: Uint8Array[] = [];
-      for await (const chunk of audio) {
-        chunks.push(chunk);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`ElevenLabs API Error ${response.status}: ${errorText}`);
       }
-      const audioBuffer = Buffer.concat(chunks);
+
+      // Get audio blob
+      const audioBlob = await response.blob();
+      const audioBuffer = await audioBlob.arrayBuffer();
 
       // Generate file path
       const timestamp = Date.now();
       const audioFileName = fileName ? `${fileName}.mp3` : `speech_${timestamp}.mp3`;
-      const filePath = `${RNFS.DocumentDirectoryPath}/${audioFileName}`;
+      const filePath = `${FileSystem.documentDirectory}${audioFileName}`;
 
-      // Save to local file system
-      await RNFS.writeFile(filePath, audioBuffer.toString('base64'), 'base64');
+      // Save to local file system as base64
+      const base64Audio = Buffer.from(audioBuffer).toString('base64');
+      await FileSystem.writeAsStringAsync(filePath, base64Audio, {
+        encoding: 'base64',
+      });
 
       console.log('Audio saved successfully at:', filePath);
       return filePath;

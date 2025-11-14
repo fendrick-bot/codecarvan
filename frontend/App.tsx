@@ -3,20 +3,16 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createDrawerNavigator } from '@react-navigation/drawer';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginScreen from './screens/LoginScreen';
 import SignupScreen from './screens/SignupScreen';
 import HomeScreen from './screens/HomeScreen';
 import MenuScreen from './screens/MenuScreen';
-import ModelScreen from './screens/ModelScreen';
 import QuizScreen from './screens/QuizScreen';
 import ResultsScreen from './screens/ResultsScreen';
 import AIAssistantScreen from './screens/AIAssistantScreen';
 import ResourcesScreen from './screens/ResourcesScreen';
-import ProfileScreenNew from './screens/ProfileScreenNew';
-import MenuDrawer from './screens/MenuDrawer';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -84,12 +80,6 @@ const AIStack = () => (
   </Stack.Navigator>
 );
 
-const ProfileStack = () => (
-  <Stack.Navigator screenOptions={commonScreenOptions}>
-    <Stack.Screen name="ProfileMain" component={ProfileScreen} options={{ title: 'Profile' }} />
-  </Stack.Navigator>
-);
-
 const AppTabs = () => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
@@ -102,7 +92,7 @@ const AppTabs = () => (
         else if (route.name === 'Learn') iconName = 'book';
         else if (route.name === 'AI Assistant') iconName = 'sparkles';
         else if (route.name === 'Quiz') iconName = 'clipboard';
-        else if (route.name === 'Profile') iconName = 'person';
+        else if (route.name === 'Menu') iconName = 'menu';
         return <Ionicons name={iconName} size={size} color={color} />;
       },
     })}
@@ -111,7 +101,7 @@ const AppTabs = () => (
     <Tab.Screen name="Learn" component={ResourcesStack} options={{ title: 'Learn' }} />
     <Tab.Screen name="AI Assistant" component={AIStack} options={{ title: 'AI' }} />
     <Tab.Screen name="Quiz" component={QuizStack} options={{ title: 'Quiz' }} />
-    <Tab.Screen name="Profile" component={ProfileStack} options={{ title: 'Profile' }} />
+    <Tab.Screen name="Menu" component={MenuScreen} options={{ title: 'Menu' }} />
   </Tab.Navigator>
 );
 

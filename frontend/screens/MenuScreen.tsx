@@ -15,6 +15,8 @@ import {
   Platform,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuth } from '../contexts/AuthContext';
 import { StackNavigationProp } from '@react-navigation/stack';
 
@@ -125,7 +127,13 @@ export default function MenuScreen({ navigation }: Props) {
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <Text style={styles.menuIcon}>{icon}</Text>
+      <View style={[styles.iconContainer, danger && styles.iconContainerDanger]}>
+        <Ionicons
+          name={icon as any}
+          size={22}
+          color={danger ? '#d32f2f' : '#6200ee'}
+        />
+      </View>
       <View style={styles.menuItemContent}>
         <Text style={[styles.menuItemTitle, danger && styles.menuItemTitleDanger]}>
           {title}
@@ -134,31 +142,47 @@ export default function MenuScreen({ navigation }: Props) {
           <Text style={styles.menuItemSubtitle}>{subtitle}</Text>
         )}
       </View>
-      <Text style={styles.chevron}>›</Text>
+      <Ionicons name="chevron-forward" size={20} color="#ccc" />
     </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
-      <StatusBar style="auto" />
+      <StatusBar style="light" />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-        {/* User Profile Section */}
-        <View style={styles.profileSection}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {user?.name?.charAt(0).toUpperCase() || 'U'}
-            </Text>
+        {/* Gradient Header with Profile Section */}
+        <LinearGradient
+          colors={['#6200ee', '#7c4dff']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.profileSection}
+        >
+          <View style={styles.avatarContainer}>
+            <LinearGradient
+              colors={['#fff3e0', '#ffe0b2']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.avatar}
+            >
+              <Text style={styles.avatarText}>
+                {user?.name?.charAt(0).toUpperCase() || 'U'}
+              </Text>
+            </LinearGradient>
           </View>
           <Text style={styles.userName}>{user?.name || 'User'}</Text>
           <Text style={styles.userEmail}>{user?.email || ''}</Text>
-        </View>
+          <View style={styles.profileBadge}>
+            <Ionicons name="checkmark-circle" size={16} color="#4caf50" />
+            <Text style={styles.profileBadgeText}>Account Active</Text>
+          </View>
+        </LinearGradient>
 
         {/* Menu Items */}
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>Account</Text>
           
           <MenuItem
-            icon="👤"
+            icon="person"
             title="Profile"
             subtitle="View and edit your profile"
             onPress={() => {
@@ -167,7 +191,7 @@ export default function MenuScreen({ navigation }: Props) {
           />
 
           <MenuItem
-            icon="📊"
+            icon="clipboard"
             title="Quiz History"
             subtitle="View your past quiz results"
             onPress={() => {
@@ -176,7 +200,7 @@ export default function MenuScreen({ navigation }: Props) {
           />
 
           <MenuItem
-            icon="📈"
+            icon="stats-chart"
             title="Statistics"
             subtitle="Your performance stats"
             onPress={() => {
@@ -189,7 +213,7 @@ export default function MenuScreen({ navigation }: Props) {
           <Text style={styles.sectionTitle}>Settings</Text>
           
           <MenuItem
-            icon="🔔"
+            icon="notifications"
             title="Notifications"
             subtitle="Manage notification preferences"
             onPress={() => {
@@ -198,7 +222,7 @@ export default function MenuScreen({ navigation }: Props) {
           />
 
           <MenuItem
-            icon="🌙"
+            icon="moon"
             title="Theme"
             subtitle="Light / Dark mode"
             onPress={() => {
@@ -207,7 +231,7 @@ export default function MenuScreen({ navigation }: Props) {
           />
 
           <MenuItem
-            icon="🗑️"
+            icon="trash"
             title="Clear Cache"
             subtitle="Free up storage space"
             onPress={handleClearCache}
@@ -218,28 +242,28 @@ export default function MenuScreen({ navigation }: Props) {
           <Text style={styles.sectionTitle}>Information</Text>
           
           <MenuItem
-            icon="ℹ️"
+            icon="information-circle"
             title="About"
             subtitle="App version and information"
             onPress={handleAbout}
           />
 
           <MenuItem
-            icon="📧"
+            icon="mail"
             title="Contact Us"
             subtitle="Get in touch with support"
             onPress={handleContact}
           />
 
           <MenuItem
-            icon="🔒"
+            icon="shield-checkmark"
             title="Privacy Policy"
             subtitle="How we protect your data"
             onPress={handlePrivacy}
           />
 
           <MenuItem
-            icon="📄"
+            icon="document-text"
             title="Terms of Service"
             subtitle="Terms and conditions"
             onPress={handleTerms}
@@ -247,13 +271,21 @@ export default function MenuScreen({ navigation }: Props) {
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={handleLogout}
-          activeOpacity={0.8}
+        <LinearGradient
+          colors={['#ffebee', '#ffcdd2']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.logoutButtonContainer}
         >
-          <Text style={styles.logoutButtonText}>🚪 Logout</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={handleLogout}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="log-out" size={22} color="#d32f2f" />
+            <Text style={styles.logoutButtonText}>Logout</Text>
+          </TouchableOpacity>
+        </LinearGradient>
 
         {/* App Version */}
         <Text style={styles.versionText}>Version 1.0.0</Text>
@@ -265,7 +297,7 @@ export default function MenuScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f5f7fa',
   },
   scrollView: {
     flex: 1,
@@ -274,48 +306,73 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   profileSection: {
-    backgroundColor: '#fff',
-    padding: 30,
+    paddingTop: 40,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
     marginBottom: 20,
   },
+  avatarContainer: {
+    marginBottom: 15,
+    shadowColor: '#6200ee',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#6200ee',
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 15,
+    borderWidth: 3,
+    borderColor: '#fff',
   },
   avatarText: {
-    fontSize: 36,
+    fontSize: 40,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#ff6f00',
   },
   userName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#fff',
     marginBottom: 5,
   },
   userEmail: {
     fontSize: 14,
-    color: '#666',
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: 12,
+  },
+  profileBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginTop: 10,
+  },
+  profileBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 6,
   },
   menuSection: {
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#999',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#6200ee',
     textTransform: 'uppercase',
     paddingHorizontal: 20,
-    paddingVertical: 10,
-    letterSpacing: 0.5,
+    paddingVertical: 12,
+    letterSpacing: 0.8,
   },
   menuItem: {
     flexDirection: 'row',
@@ -323,11 +380,32 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 16,
     paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    marginHorizontal: 12,
+    marginVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   menuItemDanger: {
     backgroundColor: '#fff',
+    borderColor: '#ffebee',
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: '#f3e5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  iconContainerDanger: {
+    backgroundColor: '#ffebee',
   },
   menuIcon: {
     fontSize: 24,
@@ -342,7 +420,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 2,
+    marginBottom: 3,
   },
   menuItemTitleDanger: {
     color: '#d32f2f',
@@ -356,27 +434,37 @@ const styles = StyleSheet.create({
     color: '#ccc',
     fontWeight: '300',
   },
-  logoutButton: {
-    backgroundColor: '#fff',
-    marginHorizontal: 20,
+  logoutButtonContainer: {
+    marginHorizontal: 12,
     marginTop: 10,
     marginBottom: 20,
-    padding: 18,
-    borderRadius: 10,
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#d32f2f',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    padding: 16,
+    paddingVertical: 18,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#d32f2f',
+    justifyContent: 'center',
+    gap: 10,
   },
   logoutButtonText: {
     color: '#d32f2f',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
   versionText: {
     fontSize: 12,
     color: '#999',
     textAlign: 'center',
-    marginTop: 10,
+    marginTop: 15,
+    fontWeight: '500',
   },
 });
 
