@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,7 +14,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../contexts/AuthContext';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { quizAPI } from '../services/api';
+import { quizAPI, aiAPI, resourcesAPI } from '../services/api';
 
 type RootStackParamList = {
   Home: undefined;
@@ -43,19 +44,11 @@ interface Answer {
   selectedAnswer: number;
 }
 
-interface Category {
-  id: string;
-  name: string;
-  icon: string;
-  iconFamily: 'ionicons' | 'materialcommunity';
-  subcategories: SubCategory[];
-  color: string;
-}
-
-interface SubCategory {
-  id: string;
-  name: string;
-  questionCount: number;
+interface Document {
+  id: number;
+  title: string;
+  description?: string;
+  subject: string;
 }
 
 interface Props {
@@ -65,243 +58,225 @@ interface Props {
 
 export default function QuizScreen({ route, navigation }: Props) {
   const questions = route.params?.questions || [];
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [selectedDocuments, setSelectedDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [generatingQuiz, setGeneratingQuiz] = useState(false);
 
-  const categories: Category[] = [
-    {
-      id: '1',
-      name: 'Mathematics',
-      icon: 'calculator-variant',
-      iconFamily: 'materialcommunity',
-      color: '#FF6B6B',
-      subcategories: [
-        { id: '1-1', name: 'Algebra', questionCount: 15 },
-        { id: '1-2', name: 'Geometry', questionCount: 12 },
-        { id: '1-3', name: 'Calculus', questionCount: 10 },
-        { id: '1-4', name: 'Statistics', questionCount: 8 },
-      ],
-    },
-    {
-      id: '2',
-      name: 'Science',
-      icon: 'test-tube',
-      iconFamily: 'materialcommunity',
-      color: '#4ECDC4',
-      subcategories: [
-        { id: '2-1', name: 'Physics', questionCount: 20 },
-        { id: '2-2', name: 'Chemistry', questionCount: 18 },
-        { id: '2-3', name: 'Biology', questionCount: 16 },
-      ],
-    },
-    {
-      id: '3',
-      name: 'English',
-      icon: 'book-open-variant',
-      iconFamily: 'materialcommunity',
-      color: '#95E1D3',
-      subcategories: [
-        { id: '3-1', name: 'Grammar', questionCount: 14 },
-        { id: '3-2', name: 'Vocabulary', questionCount: 16 },
-        { id: '3-3', name: 'Reading Comprehension', questionCount: 12 },
-      ],
-    },
-    {
-      id: '4',
-      name: 'Hindi',
-      icon: 'language-typescript',
-      iconFamily: 'materialcommunity',
-      color: '#F38181',
-      subcategories: [
-        { id: '4-1', name: 'व्याकरण', questionCount: 13 },
-        { id: '4-2', name: 'साहित्य', questionCount: 10 },
-        { id: '4-3', name: 'समझ', questionCount: 11 },
-      ],
-    },
-    {
-      id: '5',
-      name: 'Social Studies',
-      icon: 'globe-model',
-      iconFamily: 'materialcommunity',
-      color: '#AA96DA',
-      subcategories: [
-        { id: '5-1', name: 'History', questionCount: 17 },
-        { id: '5-2', name: 'Geography', questionCount: 15 },
-        { id: '5-3', name: 'Civics', questionCount: 14 },
-      ],
-    },
-    {
-      id: '6',
-      name: 'General Knowledge',
-      icon: 'brain',
-      iconFamily: 'materialcommunity',
-      color: '#FCBAD3',
-      subcategories: [
-        { id: '6-1', name: 'Current Affairs', questionCount: 20 },
-        { id: '6-2', name: 'Science & Nature', questionCount: 18 },
-        { id: '6-3', name: 'Sports', questionCount: 12 },
-      ],
-    },
-  ];
+  // Fetch documents on mount
+  useEffect(() => {
+    fetchDocuments();
+  }, []);
+
+  const fetchDocuments = async () => {
+    try {
+      setLoading(true);
+      // Try to fetch from resources API which might have document list
+      // For now, we'll use a mock approach - in production this should come from a dedicated API
+      const response = await resourcesAPI.getAll();
+      if (response.data && Array.isArray(response.data)) {
+        // Convert resources to documents format
+        const docs: Document[] = response.data.map((resource: any, index: number) => ({
+          id: index + 1,
+          title: resource.title || resource.file_name,
+          description: resource.description,
+          subject: resource.subject || 'General',
+        }));
+        setDocuments(docs);
+      }
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGenerateQuiz = async () => {
+    if (selectedDocuments.length === 0) {
+      Alert.alert('Select Documents', 'Please select at least one document to generate quiz.');
+      return;
+    }
+
+    try {
+      setGeneratingQuiz(true);
+      const docIds = selectedDocuments.map((doc) => doc.id);
+      const response = await aiAPI.generateQuiz(docIds, 10, 'medium', 'groq');
+
+      if (response.error) {
+        Alert.alert('Error', response.error || 'Failed to generate quiz');
+        return;
+      }
+
+      if (response.data && response.data.questions) {
+        // Start quiz with generated questions
+        const quizQuestions: Question[] = response.data.questions.map(
+          (q: any, index: number) => ({
+            id: index + 1,
+            question: q.question,
+            options: q.options,
+            correctAnswer: q.correctAnswer,
+            category: q.category || 'Generated',
+          })
+        );
+        
+        // Create a new navigation state to show quiz content
+        setSelectedDocuments([]);
+        navigation.push('QuizMain', { questions: quizQuestions });
+      }
+    } catch (error) {
+      console.error('Error generating quiz:', error);
+      Alert.alert('Error', 'Failed to generate quiz. Please try again.');
+    } finally {
+      setGeneratingQuiz(false);
+    }
+  };
 
   if (!questions || questions.length === 0) {
-    if (!selectedCategory) {
-      return <CategorySelectionScreen categories={categories} onSelectCategory={setSelectedCategory} />;
-    } else {
-      return <SubCategorySelectionScreen category={selectedCategory} onBack={() => setSelectedCategory(null)} />;
-    }
+    return (
+      <DocumentSelectionScreen
+        documents={documents}
+        selectedDocuments={selectedDocuments}
+        onSelectDocument={(doc) => {
+          const isSelected = selectedDocuments.some((d) => d.id === doc.id);
+          if (isSelected) {
+            setSelectedDocuments(selectedDocuments.filter((d) => d.id !== doc.id));
+          } else {
+            setSelectedDocuments([...selectedDocuments, doc]);
+          }
+        }}
+        onGenerateQuiz={handleGenerateQuiz}
+        loading={loading}
+        generatingQuiz={generatingQuiz}
+      />
+    );
   }
 
   return <QuizContentScreen questions={questions} navigation={navigation} />;
 }
 
-// Category Selection Screen
-function CategorySelectionScreen({
-  categories,
-  onSelectCategory,
+// Document Selection Screen
+function DocumentSelectionScreen({
+  documents,
+  selectedDocuments,
+  onSelectDocument,
+  onGenerateQuiz,
+  loading,
+  generatingQuiz,
 }: {
-  categories: Category[];
-  onSelectCategory: (category: Category) => void;
+  documents: Document[];
+  selectedDocuments: Document[];
+  onSelectDocument: (doc: Document) => void;
+  onGenerateQuiz: () => void;
+  loading: boolean;
+  generatingQuiz: boolean;
 }) {
-  const renderIcon = (category: Category) => {
-    const iconProps = { size: 32, color: '#fff' };
-    if (category.iconFamily === 'ionicons') {
-      return <Ionicons name={category.icon as any} {...iconProps} />;
-    }
-    return <MaterialCommunityIcons name={category.icon} {...iconProps} />;
-  };
-
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      
+
       {/* Header */}
       <View style={styles.headerNoGradient}>
-        <Text style={styles.headerTitleSmall}>Select a Category</Text>
-        <Text style={styles.headerSubtitleSmall}>Choose a subject to begin your quiz</Text>
+        <Text style={styles.headerTitleSmall}>Select Documents</Text>
+        <Text style={styles.headerSubtitleSmall}>
+          Choose documents to generate quiz questions
+        </Text>
       </View>
 
-      {/* Categories Grid */}
+      {/* Documents List */}
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.categoriesGrid}>
-          {categories.map((category) => (
-            <TouchableOpacity
-              key={category.id}
-              style={[styles.categoryCard, { borderTopColor: category.color, borderTopWidth: 4 }]}
-              onPress={() => onSelectCategory(category)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.categoryIconContainer, { backgroundColor: category.color }]}>
-                {renderIcon(category)}
-              </View>
-              <Text style={styles.categoryName}>{category.name}</Text>
-              <Text style={styles.categoryCount}>
-                {category.subcategories.length} sub-categories
-              </Text>
-              <View style={styles.categoryArrow}>
-                <Ionicons name="chevron-forward" size={20} color="#6200ee" />
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
-    </View>
-  );
-}
-
-// Sub-Category Selection Screen
-function SubCategorySelectionScreen({
-  category,
-  onBack,
-}: {
-  category: Category;
-  onBack: () => void;
-}) {
-  const [startedSubcategory, setStartedSubcategory] = useState<SubCategory | null>(null);
-  const [mockQuestions, setMockQuestions] = useState<Question[]>([]);
-
-  const handleStartQuiz = (subcategory: SubCategory) => {
-    // Create mock questions for demo
-    const questions: Question[] = [
-      {
-        id: 1,
-        question: 'What is the capital of France?',
-        options: ['London', 'Paris', 'Berlin', 'Madrid'],
-        correctAnswer: 1,
-        category: subcategory.name,
-      },
-      {
-        id: 2,
-        question: 'Which planet is the largest in our solar system?',
-        options: ['Saturn', 'Jupiter', 'Neptune', 'Uranus'],
-        correctAnswer: 1,
-        category: subcategory.name,
-      },
-      {
-        id: 3,
-        question: 'What is 25 × 4?',
-        options: ['80', '100', '90', '110'],
-        correctAnswer: 1,
-        category: subcategory.name,
-      },
-    ];
-    setMockQuestions(questions);
-    setStartedSubcategory(subcategory);
-  };
-
-  if (startedSubcategory && mockQuestions.length > 0) {
-    return (
-      <QuizContentScreen
-        questions={mockQuestions}
-        category={category}
-        navigation={null as any}
-        onBack={() => setStartedSubcategory(null)}
-      />
-    );
-  }
-
-  return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
-
-      {/* Sub-Categories List */}
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.subcategoryScrollContent}>
-        <View style={styles.backButtonContainer}>
-          <View style={styles.backButtonCompact}>
-            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }} onPress={onBack}>
-              <Ionicons name="chevron-back" size={24} color={category.color} />
-              <Text style={[styles.subcategoryScreenTitle, { color: category.color }]}>{category.name}</Text>
-            </TouchableOpacity>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#6200ee" />
+            <Text style={styles.loadingText}>Loading documents...</Text>
           </View>
-        </View>
-        {category.subcategories.map((subcategory, index) => (
-          <TouchableOpacity
-            key={subcategory.id}
-            style={[
-              styles.subcategoryCard,
-              { borderLeftColor: category.color, borderLeftWidth: 4 },
-            ]}
-            onPress={() => handleStartQuiz(subcategory)}
-            activeOpacity={0.7}
-          >
-            <View style={styles.subcategoryHeader}>
-              <View>
-                <Text style={styles.subcategoryName}>{subcategory.name}</Text>
-                <View style={styles.questionCountBadge}>
-                  <Ionicons name="help-circle" size={14} color="#fff" />
-                  <Text style={styles.questionCountText}>{subcategory.questionCount} Questions</Text>
-                </View>
-              </View>
-              <View style={[styles.subcategoryIndex, { backgroundColor: category.color }]}>
-                <Text style={styles.subcategoryIndexText}>{index + 1}</Text>
-              </View>
-            </View>
-            <View style={styles.subcategoryFooter}>
-              <Text style={styles.difficulty}>Difficulty: Medium</Text>
-              <Ionicons name="arrow-forward" size={18} color="#6200ee" />
-            </View>
-          </TouchableOpacity>
-        ))}
+        ) : documents.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="document-outline" size={48} color="#999" />
+            <Text style={styles.emptyText}>No documents available</Text>
+            <Text style={styles.emptySubtext}>Upload documents first to generate quizzes</Text>
+          </View>
+        ) : (
+          <View>
+            {documents.map((doc) => {
+              const isSelected = selectedDocuments.some((d) => d.id === doc.id);
+              return (
+                <TouchableOpacity
+                  key={doc.id}
+                  style={[
+                    styles.documentCard,
+                    isSelected && styles.documentCardSelected,
+                  ]}
+                  onPress={() => onSelectDocument(doc)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.documentCheckbox}>
+                    {isSelected && (
+                      <Ionicons name="checkmark" size={20} color="#fff" />
+                    )}
+                  </View>
+
+                  <View style={styles.documentContent}>
+                    <Text style={styles.documentTitle}>{doc.title}</Text>
+                    {doc.description && (
+                      <Text style={styles.documentDescription} numberOfLines={2}>
+                        {doc.description}
+                      </Text>
+                    )}
+                    <View style={styles.documentMeta}>
+                      <View style={styles.subjectBadge}>
+                        <Text style={styles.subjectBadgeText}>{doc.subject}</Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.documentSelector,
+                      isSelected && styles.documentSelectorSelected,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.selectCircle,
+                        isSelected && styles.selectCircleSelected,
+                      ]}
+                    />
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
       </ScrollView>
+
+      {/* Bottom Action Bar */}
+      <View style={styles.bottomBar}>
+        <Text style={styles.selectedCountText}>
+          {selectedDocuments.length} selected
+        </Text>
+        <TouchableOpacity
+          style={[
+            styles.generateButton,
+            (selectedDocuments.length === 0 || generatingQuiz) &&
+              styles.generateButtonDisabled,
+          ]}
+          onPress={onGenerateQuiz}
+          disabled={selectedDocuments.length === 0 || generatingQuiz}
+          activeOpacity={0.8}
+        >
+          {generatingQuiz ? (
+            <>
+              <ActivityIndicator size="small" color="#fff" />
+              <Text style={styles.generateButtonText}>Generating...</Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.generateButtonText}>Generate Quiz</Text>
+              <Ionicons name="arrow-forward" size={20} color="#fff" />
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -310,12 +285,10 @@ function SubCategorySelectionScreen({
 function QuizContentScreen({
   questions,
   navigation,
-  category,
   onBack,
 }: {
   questions: Question[];
   navigation: QuizScreenNavigationProp;
-  category?: Category;
   onBack?: () => void;
 }) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -397,8 +370,8 @@ function QuizContentScreen({
         </TouchableOpacity>
 
         <View style={styles.headerTextContainer}>
-          <Text style={[styles.categoryLabel, category ? { color: category.color } : {}]}>
-            {category ? category.name : 'Quiz'}
+          <Text style={styles.categoryLabel}>
+            Quiz
           </Text>
           <Text style={styles.progressLabel}>{answeredCount}/{questions.length} answered</Text>
         </View>
@@ -544,25 +517,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f7fa',
   },
   // ===== Header Styles =====
-  header: {
-    paddingTop: 35,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
-  headerContent: {
-    zIndex: 1,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#fff',
-    marginBottom: 6,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.85)',
-    fontWeight: '500',
-  },
   headerNoGradient: {
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -579,9 +533,6 @@ const styles = StyleSheet.create({
     color: '#666',
     fontWeight: '400',
   },
-  backButton: {
-    marginBottom: 12,
-  },
 
   // ===== Scroll Views =====
   scrollView: {
@@ -591,138 +542,155 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 30,
   },
-  subcategoryScrollContent: {
-    padding: 16,
-    paddingBottom: 30,
-  },
 
-  // ===== Category Grid =====
-  categoriesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  categoryCard: {
-    width: '48%',
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 16,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  categoryIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
+  // ===== Loading and Empty States =====
+  loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    paddingVertical: 60,
   },
-  categoryName: {
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyText: {
+    marginTop: 12,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#333',
-    textAlign: 'center',
-    marginBottom: 8,
   },
-  categoryCount: {
+  emptySubtext: {
+    marginTop: 6,
     fontSize: 12,
     color: '#999',
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  categoryArrow: {
-    alignSelf: 'flex-end',
-  },
-  backButtonContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
-    marginBottom: 12,
-    borderRadius: 12,
-  },
-  backButtonCompact: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-  },
-  backButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  subcategoryScreenTitle: {
-    fontSize: 22,
-    fontWeight: '700',
   },
 
-  // ===== Sub-Category Cards =====
-  subcategoryCard: {
+  // ===== Document Card Styles =====
+  documentCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 18,
+    padding: 16,
     marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 6,
     elevation: 2,
+    borderLeftWidth: 4,
+    borderLeftColor: '#e0e0e0',
   },
-  subcategoryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+  documentCardSelected: {
+    borderLeftColor: '#6200ee',
+    backgroundColor: '#f9f5ff',
   },
-  subcategoryName: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: 8,
-  },
-  questionCountBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#6200ee',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    gap: 6,
-  },
-  questionCountText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  subcategoryIndex: {
-    width: 45,
-    height: 45,
-    borderRadius: 10,
+  documentCheckbox: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#e0e0e0',
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 12,
   },
-  subcategoryIndexText: {
-    fontSize: 18,
+  documentTitle: {
+    fontSize: 15,
     fontWeight: '700',
-    color: '#fff',
+    color: '#333',
+    marginBottom: 4,
   },
-  subcategoryFooter: {
+  documentDescription: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 8,
+    lineHeight: 16,
+  },
+  documentMeta: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 12,
+    gap: 8,
+  },
+  subjectBadge: {
+    backgroundColor: '#f3e5f5',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  subjectBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6200ee',
+  },
+  documentSelector: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#d0d0d0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  documentSelectorSelected: {
+    borderColor: '#6200ee',
+    backgroundColor: '#6200ee',
+  },
+  selectCircle: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: 'transparent',
+  },
+  selectCircleSelected: {
+    backgroundColor: '#6200ee',
+  },
+  documentContent: {
+    flex: 1,
+  },
+
+  // ===== Bottom Bar Styles =====
+  bottomBar: {
+    flexDirection: 'row',
+    padding: 16,
+    paddingBottom: 24,
+    gap: 12,
+    backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
+    alignItems: 'center',
   },
-  difficulty: {
-    fontSize: 12,
+  selectedCountText: {
+    fontSize: 14,
     fontWeight: '600',
     color: '#666',
+  },
+  generateButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#6200ee',
+    padding: 14,
+    borderRadius: 10,
+    gap: 8,
+  },
+  generateButtonDisabled: {
+    opacity: 0.5,
+  },
+  generateButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
   },
 
   // ===== Quiz Content Styles =====
@@ -937,15 +905,6 @@ const styles = StyleSheet.create({
     width: 1,
     height: 20,
     backgroundColor: '#d0d0d0',
-  },
-  bottomBar: {
-    flexDirection: 'row',
-    padding: 16,
-    paddingBottom: 24,
-    gap: 12,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
   },
   prevButton: {
     flex: 1,

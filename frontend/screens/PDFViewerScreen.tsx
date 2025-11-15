@@ -6,11 +6,14 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  ScrollView,
+  Modal,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
 import { WebView } from 'react-native-webview';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { resourcesAPI } from '../services/api';
 
 interface PDFViewerScreenProps {
   route: any;
@@ -26,13 +29,24 @@ interface Resource {
   file_size?: number;
 }
 
+interface SummaryData {
+  documentId: number;
+  title: string;
+  subject: string;
+  description: string;
+  chunksCount: number;
+  originalTextLength: number;
+  summary: string;
+  llmProvider: string;
+}
+
 export default function PDFViewerScreen({ route, navigation }: PDFViewerScreenProps) {
   const resource: Resource | undefined = route?.params?.resource;
   const [isLoading, setIsLoading] = useState(true);
   const [pdfUri, setPdfUri] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSummarizing, setIsSummarizing] = useState(false);
-  const [summary, setSummary] = useState<string | null>(null);
+  const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
   const [showSummaryModal, setShowSummaryModal] = useState(false);
 
   const downloadPdf = async () => {
@@ -279,23 +293,33 @@ export default function PDFViewerScreen({ route, navigation }: PDFViewerScreenPr
     if (!resource) return;
 
     setIsSummarizing(true);
-    setSummary(null);
+    setSummaryData(null);
 
     try {
       console.log('Generating summary for resource:', resource.id);
       
-      const apiUrl = `http://10.56.198.235:3000/api/resources/${resource.id}/summary`;
-      const response = await fetch(apiUrl);
+      const resourceId = typeof resource.id === 'string' ? parseInt(resource.id) : resource.id;
+      const response = await resourcesAPI.summarize(resourceId, 1000, 'groq');
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      console.log('Full API response:', JSON.stringify(response, null, 2));
+
+      if (response.error) {
+        throw new Error(response.error);
       }
 
-      const data = await response.json();
-      console.log('Summary received:', data);
-      
-      setSummary(data.summary || 'No summary available');
-      setShowSummaryModal(true);
+      // API response structure: { data: { success: true, data: {...summary data...} }, error?: string }
+      const wrapper = response.data;
+      console.log('Response wrapper data:', JSON.stringify(wrapper, null, 2));
+
+      if (wrapper && wrapper.success && wrapper.data) {
+        console.log('Summary data extracted:', JSON.stringify(wrapper.data, null, 2));
+        setSummaryData(wrapper.data);
+        setShowSummaryModal(true);
+        console.log('Modal state set to true');
+      } else {
+        console.error('Unexpected response structure:', wrapper);
+        throw new Error('No summary data in response');
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       console.error('Error generating summary:', errorMessage);
@@ -465,28 +489,22 @@ export default function PDFViewerScreen({ route, navigation }: PDFViewerScreenPr
         </TouchableOpacity>
       </View>
 
-      {/* Summary Modal */}
-      {showSummaryModal && summary && (
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Summary</Text>
-              <TouchableOpacity
-                onPress={() => setShowSummaryModal(false)}
-                style={styles.closeButton}
-              >
-                <Ionicons name="close" size={24} color="#333" />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.summaryText}>{summary}</Text>
-
-            <TouchableOpacity
-              style={styles.closeModalButton}
+      {/* Summary Display - Using Alert for simplicity */}
+      {showSummaryModal && summaryData && (
+        <View style={styles.simpleModalOverlay}>
+          <View style={styles.simpleModalBox}>
+            <TouchableOpacity 
+              style={styles.simpleCloseButton}
               onPress={() => setShowSummaryModal(false)}
             >
-              <Text style={styles.closeModalButtonText}>Close</Text>
+              <Text style={styles.simpleCloseText}>✕</Text>
             </TouchableOpacity>
+            
+            <ScrollView style={styles.simpleScrollView}>
+              <Text style={styles.simpleTitle}>{summaryData.title}</Text>
+              <Text style={styles.simpleSubject}>Subject: {summaryData.subject}</Text>
+              <Text style={styles.simpleSummaryText}>{summaryData.summary}</Text>
+            </ScrollView>
           </View>
         </View>
       )}
@@ -655,20 +673,14 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   modalOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 1000,
   },
   modalContent: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 20,
     maxHeight: '80%',
     width: '90%',
     elevation: 5,
@@ -676,40 +688,99 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
     shadowRadius: 5,
+    overflow: 'hidden',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
-    paddingBottom: 12,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
   },
   closeButton: {
-    padding: 4,
+    padding: 8,
+  },
+  scrollContent: {
+    flex: 1,
+  },
+  summaryContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  infoLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  infoValue: {
+    fontSize: 14,
+    color: '#555',
+    lineHeight: 20,
   },
   summaryText: {
     fontSize: 14,
     color: '#555',
     lineHeight: 22,
-    marginBottom: 16,
   },
-  closeModalButton: {
-    backgroundColor: '#6200ee',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 6,
+  // Simple Modal Styles
+  simpleModalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 9999,
   },
-  closeModalButtonText: {
-    color: '#fff',
+  simpleModalBox: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    width: '85%',
+    maxHeight: '75%',
+    paddingTop: 15,
+    paddingHorizontal: 15,
+    paddingBottom: 15,
+    elevation: 10,
+  },
+  simpleCloseButton: {
+    alignSelf: 'flex-end',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  simpleCloseText: {
+    fontSize: 24,
+    color: '#333',
+    fontWeight: 'bold',
+  },
+  simpleScrollView: {
+    marginTop: 10,
+  },
+  simpleTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000',
+    marginBottom: 10,
+  },
+  simpleSubject: {
     fontSize: 14,
+    color: '#666',
+    marginBottom: 15,
     fontWeight: '600',
+  },
+  simpleSummaryText: {
+    fontSize: 13,
+    color: '#333',
+    lineHeight: 20,
   },
 });

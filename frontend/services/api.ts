@@ -298,7 +298,7 @@ export const resourcesAPI = {
     try {
       const token = await tokenService.getToken();
       
-      const headers: HeadersInit = {};
+      const headers: HeadersInit_ = {};
 
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
@@ -348,6 +348,59 @@ export const resourcesAPI = {
   delete: async (id: number): Promise<ApiResponse<{ message: string }>> => {
     return await apiRequest<{ message: string }>(API_ENDPOINTS.RESOURCES.DELETE(id), {
       method: 'DELETE',
+    });
+  },
+
+  // Summarize resource
+  summarize: async (documentId: number, maxTokens: number = 1000, useLLM: string = 'groq'): Promise<ApiResponse<any>> => {
+    return await apiRequest<any>(API_ENDPOINTS.RESOURCES.SUMMARIZE, {
+      method: 'POST',
+      body: JSON.stringify({
+        documentId,
+        maxTokens,
+        useLLM,
+      }),
+    });
+  },
+};
+
+// AI API
+export const aiAPI = {
+  // Generate quiz from documents
+  generateQuiz: async (documentIds: number[], numberOfQuestions: number = 10, difficulty: string = 'medium', useLLM: string = 'groq'): Promise<ApiResponse<any>> => {
+    return await apiRequest<any>(API_ENDPOINTS.AI.GENERATE_QUIZ, {
+      method: 'POST',
+      body: JSON.stringify({
+        documentIds,
+        numberOfQuestions,
+        difficulty,
+        useLLM,
+      }),
+    });
+  },
+
+  // Summarize document
+  summarize: async (documentId: number, maxTokens: number = 1000, useLLM: string = 'groq'): Promise<ApiResponse<any>> => {
+    return await apiRequest<any>(API_ENDPOINTS.AI.SUMMARIZE, {
+      method: 'POST',
+      body: JSON.stringify({
+        documentId,
+        maxTokens,
+        useLLM,
+      }),
+    });
+  },
+
+  // Explain topic from document
+  explain: async (documentId: number, topic: string, maxTokens: number = 1500, useLLM: string = 'groq'): Promise<ApiResponse<any>> => {
+    return await apiRequest<any>(API_ENDPOINTS.AI.EXPLAIN, {
+      method: 'POST',
+      body: JSON.stringify({
+        documentId,
+        topic,
+        maxTokens,
+        useLLM,
+      }),
     });
   },
 };
