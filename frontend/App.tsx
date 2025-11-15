@@ -23,6 +23,7 @@ import ThemeScreen from './screens/ThemeScreen';
 import ClearCacheScreen from './screens/ClearCacheScreen';
 import ContactUsScreen from './screens/ContactUsScreen';
 import AboutScreen from './screens/AboutScreen';
+import PDFViewerScreen from './screens/PDFViewerScreen';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -65,6 +66,7 @@ const HomeStack = () => (
     <Stack.Screen name="HomeMain" component={HomeScreen} options={{ title: 'Exam Prep' }} />
     <Stack.Screen name="Subjects" component={SubjectsScreen} options={{ headerShown: false }} />
     <Stack.Screen name="Lesson" component={LessonScreen} options={{ headerShown: false }} />
+    <Stack.Screen name="PDFViewer" component={PDFViewerScreen} options={{ headerShown: false }} />
   </Stack.Navigator>
 );
 

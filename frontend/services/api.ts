@@ -328,7 +328,15 @@ export const resourcesAPI = {
     const endpoint = subject
       ? `${API_ENDPOINTS.RESOURCES.LIST}?subject=${subject}`
       : API_ENDPOINTS.RESOURCES.LIST;
-    return await apiRequest<any[]>(endpoint);
+    const response = await apiRequest<any>(endpoint);
+    
+    // Extract resources array from backend response
+    if (response.data && response.data.resources) {
+      return { data: response.data.resources };
+    } else if (response.error) {
+      return { error: response.error };
+    }
+    return { data: [] };
   },
 
   // Get resource by ID

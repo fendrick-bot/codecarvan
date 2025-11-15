@@ -29,7 +29,8 @@ const RESOURCES_STORAGE_KEY = 'uploaded_resources';
 
 export default function ResourcesScreen({ navigation }: any) {
   const [resources, setResources] = useState<Resource[]>([]);
-
+  const [filteredResources, setFilteredResources] = useState<Resource[]>([]);
+  const [selectedFilterSubject, setSelectedFilterSubject] = useState('All');
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState('Math');
   const [title, setTitle] = useState('');
@@ -39,6 +40,7 @@ export default function ResourcesScreen({ navigation }: any) {
   const [isLoading, setIsLoading] = useState(false);
 
   const subjects = ['Math', 'Science', 'English', 'Social', 'Computer', 'Agriculture', 'GK', 'Hindi'];
+  const filterOptions = ['All', ...subjects];
 
   const loadResources = useCallback(async () => {
     setIsLoading(true);
@@ -55,14 +57,18 @@ export default function ResourcesScreen({ navigation }: any) {
           fileName: resource.file_name,
         }));
         setResources(apiResources);
+        // Filter to show all by default
+        setFilteredResources(apiResources);
       } else {
         // Fallback to local storage if API fails
         const savedResources = await AsyncStorage.getItem(RESOURCES_STORAGE_KEY);
         if (savedResources) {
           const parsed = JSON.parse(savedResources);
           setResources(parsed);
+          setFilteredResources(parsed);
         } else {
           setResources([]);
+          setFilteredResources([]);
         }
       }
     } catch (error) {
@@ -73,12 +79,15 @@ export default function ResourcesScreen({ navigation }: any) {
         if (savedResources) {
           const parsed = JSON.parse(savedResources);
           setResources(parsed);
+          setFilteredResources(parsed);
         } else {
           setResources([]);
+          setFilteredResources([]);
         }
       } catch (storageError) {
         console.log('Error loading from storage:', storageError);
         setResources([]);
+        setFilteredResources([]);
       }
     } finally {
       setIsLoading(false);
@@ -94,6 +103,15 @@ export default function ResourcesScreen({ navigation }: any) {
       loadResources();
     }, [loadResources])
   );
+
+  const handleFilterChange = (subject: string) => {
+    setSelectedFilterSubject(subject);
+    if (subject === 'All') {
+      setFilteredResources(resources);
+    } else {
+      setFilteredResources(resources.filter(r => r.subject === subject));
+    }
+  };
 
   const handlePickDocument = async () => {
     try {
@@ -172,6 +190,13 @@ export default function ResourcesScreen({ navigation }: any) {
       // Update UI
       const updatedResources = [...resources, newResource];
       setResources(updatedResources);
+      
+      // Apply filter to updated resources
+      if (selectedFilterSubject === 'All') {
+        setFilteredResources(updatedResources);
+      } else {
+        setFilteredResources(updatedResources.filter(r => r.subject === selectedFilterSubject));
+      }
 
       // Reset form
       setTitle('');
@@ -213,18 +238,55 @@ export default function ResourcesScreen({ navigation }: any) {
               environments. Tap an item to open details.
             </Text>
 
-            {resources.map((resource) => (
-              <TouchableOpacity
-                key={resource.id}
-                style={styles.card}
-                onPress={() => { /* open resource */ }}
+            {/* Subject Filter */}
+            <View style={styles.filterContainer}>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.filterScroll}
               >
-                <Text style={styles.cardTitle}>{resource.title}</Text>
-                <Text style={styles.cardSubject}>{resource.subject}</Text>
-                <Text style={styles.cardDescription}>{resource.description}</Text>
-                <Text style={styles.cardSubtitle}>PDF · {resource.fileName}</Text>
-              </TouchableOpacity>
-            ))}
+                {filterOptions.map((subject) => (
+                  <TouchableOpacity
+                    key={subject}
+                    style={[
+                      styles.filterButton,
+                      selectedFilterSubject === subject && styles.filterButtonActive,
+                    ]}
+                    onPress={() => handleFilterChange(subject)}
+                  >
+                    <Text
+                      style={[
+                        styles.filterButtonText,
+                        selectedFilterSubject === subject && styles.filterButtonTextActive,
+                      ]}
+                    >
+                      {subject}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            {filteredResources.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateText}>
+                  No resources found for {selectedFilterSubject}
+                </Text>
+              </View>
+            ) : (
+              filteredResources.map((resource) => (
+                <TouchableOpacity
+                  key={resource.id}
+                  style={styles.card}
+                  onPress={() => { /* open resource */ }}
+                >
+                  <Text style={styles.cardTitle}>{resource.title}</Text>
+                  <Text style={styles.cardSubject}>{resource.subject}</Text>
+                  <Text style={styles.cardDescription}>{resource.description}</Text>
+                  <Text style={styles.cardSubtitle}>PDF · {resource.fileName}</Text>
+                </TouchableOpacity>
+              ))
+            )}
           </ScrollView>
 
           {/* Floating Upload Button Above Tab */}
@@ -357,6 +419,43 @@ const styles = StyleSheet.create({
     fontSize: 15,
     marginBottom: 12,
     color: '#555',
+  },
+  filterContainer: {
+    marginBottom: 16,
+  },
+  filterScroll: {
+    paddingRight: 16,
+  },
+  filterButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  filterButtonActive: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+  },
+  filterButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#666',
+  },
+  filterButtonTextActive: {
+    color: '#fff',
+  },
+  emptyState: {
+    paddingVertical: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
   },
   card: {
     backgroundColor: '#fff',
