@@ -40,17 +40,23 @@ interface Props {
 
 export default function ResultsScreen({ route, navigation }: Props) {
   const { results } = route.params;
-  const { score, total, percentage, results: questionResults } = results;
+  const { score, total, percentage, results: questionResults = [] } = results || {};
+
+  // Fallback values in case data is missing
+  const finalScore = score ?? 0;
+  const finalTotal = total ?? 0;
+  const finalPercentage = percentage ?? 0;
+  const finalResults = Array.isArray(questionResults) ? questionResults : [];
 
   const getScoreColor = (): string => {
-    if (percentage >= 80) return '#4caf50';
-    if (percentage >= 60) return '#ff9800';
+    if (finalPercentage >= 80) return '#4caf50';
+    if (finalPercentage >= 60) return '#ff9800';
     return '#f44336';
   };
 
   const getScoreMessage = (): string => {
-    if (percentage >= 80) return 'Excellent!';
-    if (percentage >= 60) return 'Good job!';
+    if (finalPercentage >= 80) return 'Excellent!';
+    if (finalPercentage >= 60) return 'Good job!';
     return 'Keep practicing!';
   };
 
@@ -61,42 +67,54 @@ export default function ResultsScreen({ route, navigation }: Props) {
         <View style={styles.scoreContainer}>
           <Text style={styles.scoreMessage}>{getScoreMessage()}</Text>
           <Text style={[styles.scoreText, { color: getScoreColor() }]}>
-            {score} / {total}
+            {finalScore} / {finalTotal}
           </Text>
           <Text style={[styles.percentageText, { color: getScoreColor() }]}>
-            {percentage}%
+            {finalPercentage}%
           </Text>
         </View>
 
         <Text style={styles.resultsTitle}>Question Review</Text>
-        {questionResults.map((result, index) => (
-          <View key={index} style={styles.resultItem}>
-            <Text style={styles.resultQuestion}>{result.question}</Text>
-            <View style={styles.resultDetails}>
-              <Text
-                style={[
-                  styles.resultAnswer,
-                  result.isCorrect ? styles.correct : styles.incorrect,
-                ]}
-              >
-                Your Answer: {result.options[result.selectedAnswer]}
-                {result.isCorrect ? ' ✓' : ' ✗'}
-              </Text>
-              {!result.isCorrect && (
-                <Text style={styles.correctAnswer}>
-                  Correct Answer: {result.options[result.correctAnswer]}
+        {finalResults && finalResults.length > 0 ? (
+          finalResults.map((result, index) => (
+            <View key={index} style={styles.resultItem}>
+              <Text style={styles.resultQuestion}>{result.question}</Text>
+              <View style={styles.resultDetails}>
+                <Text
+                  style={[
+                    styles.resultAnswer,
+                    result.isCorrect ? styles.correct : styles.incorrect,
+                  ]}
+                >
+                  Your Answer: {result.options?.[result.selectedAnswer] || 'N/A'}
+                  {result.isCorrect ? ' ✓' : ' ✗'}
                 </Text>
-              )}
+                {!result.isCorrect && (
+                  <Text style={styles.correctAnswer}>
+                    Correct Answer: {result.options?.[result.correctAnswer] || 'N/A'}
+                  </Text>
+                )}
+              </View>
             </View>
+          ))
+        ) : (
+          <View style={styles.noResultsContainer}>
+            <Text style={styles.noResultsText}>No detailed results available</Text>
           </View>
-        ))}
+        )}
       </ScrollView>
 
       <TouchableOpacity
         style={styles.homeButton}
-        onPress={() => navigation.navigate('Home')}
+        onPress={() => {
+          // Reset to QuizMain and let it show document selection
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'QuizMain', params: { questions: [] } }],
+          });
+        }}
       >
-        <Text style={styles.homeButtonText}>Back to Home</Text>
+        <Text style={styles.homeButtonText}>Create Another Quiz</Text>
       </TouchableOpacity>
     </View>
   );
@@ -191,6 +209,19 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  noResultsContainer: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 15,
+  },
+  noResultsText: {
+    fontSize: 14,
+    color: '#999',
+    fontWeight: '500',
   },
 });
 

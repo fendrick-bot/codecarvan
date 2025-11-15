@@ -367,14 +367,12 @@ export const resourcesAPI = {
 // AI API
 export const aiAPI = {
   // Generate quiz from documents
-  generateQuiz: async (documentIds: number[], numberOfQuestions: number = 10, difficulty: string = 'medium', useLLM: string = 'groq'): Promise<ApiResponse<any>> => {
+  generateQuiz: async (documentIds: number[], customTitle?: string): Promise<ApiResponse<any>> => {
     return await apiRequest<any>(API_ENDPOINTS.AI.GENERATE_QUIZ, {
       method: 'POST',
       body: JSON.stringify({
         documentIds,
-        numberOfQuestions,
-        difficulty,
-        useLLM,
+        customTitle,
       }),
     });
   },
