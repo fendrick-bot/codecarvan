@@ -57,7 +57,8 @@ interface Props {
 }
 
 export default function QuizScreen({ route, navigation }: Props) {
-  const questions = route.params?.questions || [];
+  const routeQuestions = route.params?.questions || [];
+  const [questions, setQuestions] = useState<Question[]>(routeQuestions);
   const [selectedDocuments, setSelectedDocuments] = useState<Document[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,6 +68,14 @@ export default function QuizScreen({ route, navigation }: Props) {
   useEffect(() => {
     fetchDocuments();
   }, []);
+
+  // Update questions when route params change
+  useEffect(() => {
+    if (route.params?.questions && route.params.questions.length > 0) {
+      console.log('QuizScreen: Received questions from route params:', route.params.questions.length);
+      setQuestions(route.params.questions);
+    }
+  }, [route.params?.questions]);
 
   const fetchDocuments = async () => {
     try {
@@ -100,28 +109,46 @@ export default function QuizScreen({ route, navigation }: Props) {
     try {
       setGeneratingQuiz(true);
       const docIds = selectedDocuments.map((doc) => doc.id);
-      const response = await aiAPI.generateQuiz(docIds, 10, 'medium', 'groq');
+      const customTitle = `Quiz - ${selectedDocuments.map(d => d.title).join(', ')}`;
+      
+      const response = await aiAPI.generateQuiz(docIds, customTitle);
+
+      console.log('QuizScreen: Full API response:', JSON.stringify(response, null, 2));
 
       if (response.error) {
         Alert.alert('Error', response.error || 'Failed to generate quiz');
         return;
       }
 
-      if (response.data && response.data.questions) {
+      // Backend returns: { success: true, data: { questions, ... } }
+      // apiRequest wraps it as: { data: { success: true, data: { questions, ... } } }
+      const backendData = response.data?.data || response.data;
+      console.log('QuizScreen: Backend data:', JSON.stringify(backendData, null, 2));
+      console.log('QuizScreen: Questions array:', backendData?.questions);
+
+      if (backendData?.questions && backendData.questions.length > 0) {
         // Start quiz with generated questions
-        const quizQuestions: Question[] = response.data.questions.map(
-          (q: any, index: number) => ({
-            id: index + 1,
+        const quizQuestions: Question[] = backendData.questions.map(
+          (q: any) => ({
+            id: q.id,
             question: q.question,
             options: q.options,
             correctAnswer: q.correctAnswer,
-            category: q.category || 'Generated',
+            category: 'Generated',
           })
         );
         
-        // Create a new navigation state to show quiz content
+        console.log('QuizScreen: Generated quiz with questions:', quizQuestions.length);
+        console.log('First question:', JSON.stringify(quizQuestions[0], null, 2));
+        
+        // Update state to show quiz content directly
         setSelectedDocuments([]);
-        navigation.push('QuizMain', { questions: quizQuestions });
+        console.log('QuizScreen: About to set questions state with:', quizQuestions.length, 'questions');
+        setQuestions(quizQuestions);
+        console.log('QuizScreen: Questions state set');
+      } else {
+        console.error('QuizScreen: No questions in response. Backend data:', backendData);
+        Alert.alert('Error', 'No questions generated. Please try again.');
       }
     } catch (error) {
       console.error('Error generating quiz:', error);
@@ -132,6 +159,7 @@ export default function QuizScreen({ route, navigation }: Props) {
   };
 
   if (!questions || questions.length === 0) {
+    console.log('QuizScreen: Showing document selection. Current questions:', questions?.length || 0);
     return (
       <DocumentSelectionScreen
         documents={documents}
@@ -151,6 +179,7 @@ export default function QuizScreen({ route, navigation }: Props) {
     );
   }
 
+  console.log('QuizScreen: Showing quiz content with', questions.length, 'questions');
   return <QuizContentScreen questions={questions} navigation={navigation} />;
 }
 
@@ -299,15 +328,26 @@ function QuizContentScreen({
 
   const currentQuestion = questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
-  const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
+  const isCorrect = selectedAnswer !== null ? selectedAnswer === currentQuestion.correctAnswer : false;
+  
+  // Prevent duplicate questions - ensure we're showing the correct question
+  if (!currentQuestion) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.headerTitleSmall}>Quiz Error</Text>
+        <Text style={styles.headerSubtitleSmall}>No questions available</Text>
+      </View>
+    );
+  }
+
+  // Count answered questions correctly - don't double count the current answer
+  const answeredCount = answers.length;
+  const progressPercent = questions.length > 0 ? Math.round((answeredCount / questions.length) * 100) : 0;
 
   const handleAnswerSelect = (answerIndex: number) => {
     setSelectedAnswer(answerIndex);
     setShowCorrectAnswer(true);
   };
-
-  const answeredCount = answers.length + (selectedAnswer !== null ? 1 : 0);
-  const progressPercent = Math.round((answeredCount / questions.length) * 100);
 
   const handleNext = () => {
     if (selectedAnswer === null) {
@@ -346,7 +386,19 @@ function QuizContentScreen({
       }
 
       if (response.data) {
-        navigation.navigate('Results', { results: response.data });
+        // Calculate correct percentage from response
+        const quizResults = response.data;
+        const correctCount = quizResults.results?.filter((r: any) => r.isCorrect).length || 0;
+        const totalCount = quizResults.results?.length || quizResults.total || finalAnswers.length;
+        const calculatedPercentage = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
+        
+        // Ensure percentage is calculated correctly
+        quizResults.percentage = calculatedPercentage;
+        quizResults.score = correctCount;
+        quizResults.total = totalCount;
+        
+        console.log('Quiz Results:', { score: quizResults.score, total: quizResults.total, percentage: quizResults.percentage });
+        navigation.navigate('Results', { results: quizResults });
       }
     } catch (error) {
       console.error('Error submitting quiz:', error);

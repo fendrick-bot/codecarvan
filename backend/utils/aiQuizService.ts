@@ -65,15 +65,24 @@ async function fetchDocumentContent(documentIds: number[]): Promise<{
 async function generateQuizQuestions(documentsContent: string, documentTitles: string): Promise<QuizQuestion[]> {
   const systemPrompt = `You are an expert educational quiz creator. Your task is to generate high-quality multiple-choice questions based on the provided document content.
 
-IMPORTANT RULES:
+CRITICAL INSTRUCTIONS:
 1. Generate EXACTLY 10 questions
 2. Each question must have EXACTLY 4 options
-3. Only return a valid JSON array, no markdown, no extra text
-4. Each question object must have: question (string), options (array of 4 strings), correctAnswer (0-3 index), explanation (string)
-5. Make questions test understanding and critical thinking, not just memorization
-6. Ensure correct answer is randomly distributed among positions
-7. Make wrong options plausible but clearly distinguishable
-8. Include explanations for why the correct answer is right`;
+3. correctAnswer MUST be 0, 1, 2, or 3 (the INDEX of the correct option, starting from 0)
+4. Only return a valid JSON array, no markdown, no extra text
+5. Each question object must have these exact fields:
+   - question (string): the question text
+   - options (array of 4 strings): the answer choices
+   - correctAnswer (integer 0-3): which option is correct (0 for first option, 1 for second, etc.)
+   - explanation (string): why this answer is correct
+
+EXAMPLES OF CORRECT correctAnswer VALUES:
+- If the first option is correct: "correctAnswer": 0
+- If the second option is correct: "correctAnswer": 1
+- If the third option is correct: "correctAnswer": 2
+- If the fourth option is correct: "correctAnswer": 3
+
+NEVER use correctAnswer values like 1-4 or 4+. ALWAYS use 0-3.`;
 
   const prompt = `Based on the following educational content about "${documentTitles}", create 10 multiple-choice questions with 4 options each:
 
@@ -83,13 +92,15 @@ ${documentsContent.substring(0, 12000)}
 Return ONLY a valid JSON array with no additional text:
 [
   {
-    "question": "...",
-    "options": ["...", "...", "...", "..."],
+    "question": "What is...?",
+    "options": ["First option", "Second option", "Third option", "Fourth option"],
     "correctAnswer": 0,
-    "explanation": "..."
+    "explanation": "Explanation of why the first option is correct..."
   },
   ...
-]`;
+]
+
+REMEMBER: correctAnswer must be 0, 1, 2, or 3 only!`;
 
   const response = await callLLMGroq(
     {
@@ -134,9 +145,25 @@ Return ONLY a valid JSON array with no additional text:
       if (!Array.isArray(q.options) || q.options.length !== 4) {
         throw new Error(`Question ${idx}: Must have exactly 4 options`);
       }
-      if (typeof q.correctAnswer !== 'number' || q.correctAnswer < 0 || q.correctAnswer > 3) {
-        throw new Error(`Question ${idx}: correctAnswer must be 0-3`);
+      
+      // Normalize correctAnswer - ensure it's a valid index (0-3)
+      let correctAnswer = q.correctAnswer;
+      if (typeof correctAnswer !== 'number') {
+        throw new Error(`Question ${idx}: correctAnswer must be a number`);
       }
+      
+      // If correctAnswer is out of bounds, try to fix it
+      if (correctAnswer < 0 || correctAnswer > 3) {
+        // If it's 1-4, convert to 0-3 (LLM sometimes uses 1-based indexing)
+        if (correctAnswer > 0 && correctAnswer <= 4) {
+          correctAnswer = correctAnswer - 1;
+          console.warn(`Question ${idx}: Corrected correctAnswer from ${q.correctAnswer} to ${correctAnswer}`);
+          q.correctAnswer = correctAnswer;
+        } else {
+          throw new Error(`Question ${idx}: correctAnswer must be 0-3, got ${q.correctAnswer}`);
+        }
+      }
+      
       if (!q.explanation || typeof q.explanation !== 'string') {
         throw new Error(`Question ${idx}: Missing explanation`);
       }
