@@ -75,6 +75,40 @@ export const initDatabase = async (): Promise<void> => {
     )
   `);
 
+    // Create AI quizzes table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ai_quizzes (
+        id SERIAL PRIMARY KEY,
+        document_ids TEXT NOT NULL,
+        title VARCHAR(500) NOT NULL,
+        subject VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create AI quiz questions table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ai_quiz_questions (
+        id SERIAL PRIMARY KEY,
+        quiz_id INTEGER NOT NULL REFERENCES ai_quizzes(id) ON DELETE CASCADE,
+        question_text TEXT NOT NULL,
+        options JSONB NOT NULL,
+        correct_answer INTEGER NOT NULL CHECK (correct_answer >= 0 AND correct_answer <= 3),
+        explanation TEXT,
+        question_order INTEGER NOT NULL,
+        UNIQUE(quiz_id, question_order)
+      )
+    `);
+
+    // Create indexes
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_ai_quizzes_created_at ON ai_quizzes(created_at DESC)
+    `);
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_ai_quiz_questions_quiz_id ON ai_quiz_questions(quiz_id)
+    `);
+
     console.log("Database initialized successfully");
   } catch (error) {
     console.error("Error initializing database:", error);
