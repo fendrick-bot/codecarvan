@@ -13,6 +13,7 @@ import categoryRoutes from './routes/categoryRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
 import fileUploadRoutes from './routes/fileupload.js';
 import resourceRoutes from './routes/resourceRoutes.js';
+import aiModelRoutes from './routes/aiModel.js';
 
 
 
@@ -42,6 +43,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/uploads', fileUploadRoutes);
 app.use('/api/resources', resourceRoutes);
+app.use('/api/ai', aiModelRoutes);
 
 // Error handling middleware (must be after all routes)
 app.use(notFoundHandler);
