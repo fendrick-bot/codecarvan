@@ -109,6 +109,39 @@ export const initDatabase = async (): Promise<void> => {
       CREATE INDEX IF NOT EXISTS idx_ai_quiz_questions_quiz_id ON ai_quiz_questions(quiz_id)
     `);
 
+    // Create AI Chat tables
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ai_conversations (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(500) NOT NULL DEFAULT 'New Conversation',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ai_chat_messages (
+        id SERIAL PRIMARY KEY,
+        conversation_id INTEGER NOT NULL REFERENCES ai_conversations(id) ON DELETE CASCADE,
+        role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create indexes for chat tables
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_ai_conversations_updated_at ON ai_conversations(updated_at DESC)
+    `);
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_ai_chat_messages_conversation_id ON ai_chat_messages(conversation_id)
+    `);
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_ai_chat_messages_created_at ON ai_chat_messages(created_at)
+    `);
+
     console.log("Database initialized successfully");
   } catch (error) {
     console.error("Error initializing database:", error);
