@@ -3,6 +3,7 @@ import multer from 'multer';
 import * as fs from 'fs';
 import * as path from 'path';
 import pool from '../db.js';
+import { callLLM, callLLMGroq, type LLMRequest } from '../utils/llmService.js';
 
 const router = Router();
 

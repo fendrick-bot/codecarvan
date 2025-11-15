@@ -26,6 +26,11 @@ export const API_ENDPOINTS = {
     LIST: '/resources/list',
     BY_ID: (id: number) => `/resources/${id}`,
     DELETE: (id: number) => `/resources/${id}`,
+    SUMMARIZE: '/ai/summarize',
+  },
+  AI: {
+    EXPLAIN: '/ai/explain',
+    GENERATE_QUIZ: '/ai-quiz/generate',
   },
 };
 
